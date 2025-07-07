@@ -1,0 +1,44 @@
+[Unit]
+Description=FlightTrak AI Intelligence Service - Advanced Event Detection
+After=network.target
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+WorkingDirectory=/root/flighttrak
+Environment="PATH=/root/flighttrak/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+Environment="PYTHONPATH=/root/flighttrak"
+
+# Main AI Intelligence Service
+ExecStart=/usr/bin/python3 /root/flighttrak/ai_intelligence_service.py
+
+# Service management
+ExecStartPre=/bin/sleep 5
+ExecReload=/root/flighttrak/venv/bin/python3 /root/flighttrak/send_service_notification.py reload
+ExecStopPost=/root/flighttrak/venv/bin/python3 -c "import logging; logging.basicConfig(filename='/root/flighttrak/ai_intelligence_service.log', level=logging.INFO); logging.info('AI Intelligence Service stopped')"
+
+# Restart configuration
+Restart=always
+RestartSec=30
+StartLimitInterval=300
+StartLimitBurst=5
+
+# Logging
+StandardOutput=append:/root/flighttrak/ai_intelligence_service.log
+StandardError=append:/root/flighttrak/ai_intelligence_service.log
+
+# Resource limits
+MemoryLimit=1G
+CPUQuota=200%
+
+# Security
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/root/flighttrak
+
+[Install]
+WantedBy=multi-user.target

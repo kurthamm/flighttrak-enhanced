@@ -282,6 +282,29 @@
                     </div>
                 </div>
 
+                <!-- AI Intelligence Status -->
+                <div class="section">
+                    <div class="section-header">🤖 AI Intelligence</div>
+                    <div class="patterns-grid" id="ai-intelligence">
+                        <div class="pattern-item">
+                            <span class="pattern-label">Service Status:</span>
+                            <span class="pattern-value" id="ai-service-status">Checking...</span>
+                        </div>
+                        <div class="pattern-item">
+                            <span class="pattern-label">Intelligence Sources:</span>
+                            <span class="pattern-value" id="ai-sources">10</span>
+                        </div>
+                        <div class="pattern-item">
+                            <span class="pattern-label">Alerts Sent:</span>
+                            <span class="pattern-value" id="ai-alerts">0</span>
+                        </div>
+                        <div class="pattern-item">
+                            <span class="pattern-label">News Correlations:</span>
+                            <span class="pattern-value" id="ai-news">0</span>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Recent Events -->
                 <div class="section">
                     <div class="section-header">🚨 Recent Events</div>
@@ -427,8 +450,9 @@
             Promise.all([
                 fetch('/api/aircraft').then(r => r.json()),
                 fetch('/api/events').then(r => r.json()),
-                fetch('/api/patterns').then(r => r.json())
-            ]).then(([aircraftData, eventsData, patternsData]) => {
+                fetch('/api/patterns').then(r => r.json()),
+                fetch('/api/ai-intelligence').then(r => r.json())
+            ]).then(([aircraftData, eventsData, patternsData, aiData]) => {
                 // Update main stats
                 document.getElementById('current-count').textContent = aircraftData.stats.current;
                 document.getElementById('total-seen').textContent = aircraftData.stats.total_seen;
@@ -442,6 +466,15 @@
                 document.getElementById('multiple-callsigns').textContent = patternsData.multiple_callsigns;
                 document.getElementById('rapid-climbers').textContent = patternsData.rapid_climbers;
                 document.getElementById('circling-aircraft').textContent = patternsData.circling_aircraft;
+                
+                // Update AI Intelligence status
+                const aiStatus = aiData.enabled ? 
+                    (aiData.service_status === 'running' ? '🟢 Online' : '🟡 Starting') : 
+                    '🔴 Offline';
+                document.getElementById('ai-service-status').textContent = aiStatus;
+                document.getElementById('ai-sources').textContent = aiData.enhanced_intelligence?.total_services || 10;
+                document.getElementById('ai-alerts').textContent = aiData.alerts_sent || 0;
+                document.getElementById('ai-news').textContent = aiData.news_correlations || 0;
                 
                 // Update map with aircraft
                 updateMapAircraft(aircraftData.aircraft);

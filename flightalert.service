@@ -9,7 +9,7 @@ Group=root
 WorkingDirectory=/root/flighttrak
 Environment="PATH=/root/flighttrak/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 #ExecStartPre=/root/flighttrak/venv/bin/python3 /root/flighttrak/send_service_notification.py start
-ExecStart=/root/flighttrak/venv/bin/python3 /root/flighttrak/fa_enhanced.py
+ExecStart=/root/flighttrak/venv/bin/python3 /root/flighttrak/fa_enhanced_v2.py
 ExecReload=/root/flighttrak/venv/bin/python3 /root/flighttrak/send_service_notification.py reload
 Restart=always
 RestartSec=10

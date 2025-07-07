@@ -30,41 +30,10 @@ except ImportError as e:
     print("pip install scikit-learn numpy requests feedparser")
     sys.exit(1)
 
-def send_gmail_smtp(to_emails, subject, html_content, email_cfg):
-    """Send email using Gmail SMTP instead of SendGrid"""
-    try:
-        # Create message
-        msg = MIMEMultipart('alternative')
-        msg['From'] = email_cfg['sender']
-        msg['Subject'] = subject
-        
-        # Handle multiple recipients
-        if isinstance(to_emails, list):
-            msg['To'] = ', '.join(to_emails)
-            recipients = to_emails
-        else:
-            msg['To'] = to_emails
-            recipients = [to_emails]
-        
-        # Attach HTML content
-        html_part = MIMEText(html_content, 'html')
-        msg.attach(html_part)
-        
-        # Connect to Gmail SMTP
-        server = smtplib.SMTP(email_cfg['smtp_server'], email_cfg['smtp_port'])
-        server.starttls()  # Enable TLS encryption
-        server.login(email_cfg['sender'], email_cfg['password'])
-        
-        # Send email
-        server.send_message(msg, to_addrs=recipients)
-        server.quit()
-        
-        logging.info(f"Email sent successfully via Gmail SMTP to {recipients}")
-        return True
-        
-    except Exception as e:
-        logging.error(f"Error sending email via Gmail SMTP: {e}")
-        return False
+# Import our unified modules
+from config_manager import config
+from email_service import EmailService
+from utils import haversine_distance, load_json_config
 
 class AIIntelligenceService:
     """Main service coordinator for AI intelligence systems"""
@@ -73,19 +42,14 @@ class AIIntelligenceService:
         self.running = True
         self.threads = []
         
-        # Load configuration
-        try:
-            with open('config.json') as f:
-                self.config = json.load(f)
-        except Exception as e:
-            logging.error(f"Failed to load config.json: {e}")
-            sys.exit(1)
+        # Use unified configuration
+        self.home_lat, self.home_lon = config.get_home_coordinates()
         
-        self.home_lat = self.config['home']['lat']
-        self.home_lon = self.config['home']['lon']
+        # Initialize email service
+        self.email_service = EmailService(config.get_email_config())
         
         # Initialize AI systems
-        self.ai_detector = AIEventDetector(self.home_lat, self.home_lon, self.config)
+        self.ai_detector = AIEventDetector(self.home_lat, self.home_lon, config._config)
         self.context_intel = ContextualIntelligence(self.home_lat, self.home_lon)
         
         # Load aircraft tracking list
@@ -95,7 +59,7 @@ class AIIntelligenceService:
         
         # Initialize anomaly detector if enabled
         self.anomaly_detector = None
-        if self.config.get('alert_config', {}).get('anomaly_alerts', {}).get('enabled', False):
+        if config.is_alert_enabled('anomaly'):
             try:
                 from anomaly_detector import FlightAnomalyDetector
                 self.anomaly_detector = FlightAnomalyDetector(self.home_lat, self.home_lon)
@@ -114,29 +78,22 @@ class AIIntelligenceService:
     def load_aircraft_list(self):
         """Load the aircraft tracking list"""
         try:
-            with open(self.config['aircraft_file_path']) as f:
-                aircraft_data = json.load(f)
-                self.tracked_aircraft = {
-                    aircraft['icao'].upper(): aircraft 
-                    for aircraft in aircraft_data.get('aircraft_to_detect', [])
-                }
-                logging.info(f"Loaded {len(self.tracked_aircraft)} tracked aircraft")
+            aircraft_file = config.get('files.aircraft_list')
+            aircraft_data = load_json_config(str(aircraft_file))
+            self.tracked_aircraft = {
+                aircraft['icao'].upper(): aircraft 
+                for aircraft in aircraft_data.get('aircraft_to_detect', [])
+            }
+            logging.info(f"Loaded {len(self.tracked_aircraft)} tracked aircraft")
         except Exception as e:
             logging.error(f"Failed to load aircraft list: {e}")
             self.tracked_aircraft = {}
     
-    def haversine_distance(self, lat1: float, lon1: float, lat2: float, lon2: float) -> float:
-        """Calculate distance in miles"""
-        R = 3959  # Earth radius in miles
-        lat1, lon1, lat2, lon2 = map(math.radians, [lat1, lon1, lat2, lon2])
-        dlat, dlon = lat2 - lat1, lon2 - lon1
-        a = math.sin(dlat/2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon/2)**2
-        return 2 * R * math.asin(math.sqrt(a))
     
     def check_tracked_aircraft(self, aircraft_list: list):
         """Check for tracked aircraft and send alerts if enabled"""
         # Check if tracked aircraft alerts are enabled
-        if not self.config.get('alert_config', {}).get('tracked_aircraft_alerts', {}).get('enabled', False):
+        if not config.is_alert_enabled('tracked_aircraft'):
             return
         
         for aircraft in aircraft_list:

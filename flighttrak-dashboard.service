@@ -1,0 +1,19 @@
+[Unit]
+Description=FlightTrak Enhanced Dashboard
+After=network.target flightalert.service
+Wants=flightalert.service
+
+[Service]
+Type=simple
+User=root
+Group=root
+WorkingDirectory=/root/flighttrak
+Environment="PATH=/root/flighttrak/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+ExecStart=/root/flighttrak/venv/bin/python3 /root/flighttrak/enhanced_dashboard.py
+Restart=always
+RestartSec=10
+StandardOutput=append:/root/flighttrak/dashboard.log
+StandardError=append:/root/flighttrak/dashboard.log
+
+[Install]
+WantedBy=multi-user.target
