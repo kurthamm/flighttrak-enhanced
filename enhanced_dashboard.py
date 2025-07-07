@@ -561,23 +561,36 @@ def update_aircraft_data():
                 
                 # Update history
                 current_time = time.time()
-                if hex_code not in aircraft_history:
+                is_new_aircraft = hex_code not in aircraft_history
+                
+                if is_new_aircraft:
                     aircraft_history[hex_code] = {
                         'first_seen': current_time,
                         'positions': deque(maxlen=50),
                         'data': aircraft
                     }
-                    # Add to 24-hour tracking
-                    aircraft_seen_24h.append((hex_code, current_time))
                 
-                # Update 24-hour count by removing old entries
+                # Update 24-hour tracking
                 cutoff_time = current_time - 86400  # 24 hours ago
+                
+                # Add new aircraft to 24-hour tracking
+                if is_new_aircraft:
+                    aircraft_seen_24h.append((hex_code, current_time))
+                    print(f"DEBUG: Added new aircraft {hex_code} to 24h tracking")
+                
+                # Clean up old entries
+                old_length = len(aircraft_seen_24h)
                 while aircraft_seen_24h and aircraft_seen_24h[0][1] < cutoff_time:
                     aircraft_seen_24h.popleft()
                 
-                # Update total seen to reflect last 24 hours
+                if len(aircraft_seen_24h) != old_length:
+                    print(f"DEBUG: Cleaned up {old_length - len(aircraft_seen_24h)} old entries")
+                
+                # Update total seen to reflect unique aircraft in last 24 hours
                 unique_aircraft_24h = set(entry[0] for entry in aircraft_seen_24h)
                 stats['total_seen'] = len(unique_aircraft_24h)
+                
+                print(f"DEBUG: 24h tracking has {len(aircraft_seen_24h)} entries, {len(unique_aircraft_24h)} unique aircraft")
                 
                 # Add position to history
                 if 'lat' in aircraft and 'lon' in aircraft:
