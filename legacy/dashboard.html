@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FlightTrak Dashboard</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0e27;
+            color: #e0e6ed;
+            line-height: 1.6;
+        }
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+        .header {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        h1 { font-size: 2em; margin-bottom: 10px; }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .stat-card {
+            background: #1a1f3a;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #2a3f5f;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #4fc3f7;
+        }
+        .stat-label {
+            color: #8892b0;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+        .aircraft-table {
+            background: #1a1f3a;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th {
+            background: #2a3f5f;
+            padding: 12px;
+            text-align: left;
+            font-weight: 500;
+            color: #8892b0;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #2a3f5f;
+        }
+        tr:hover { background: #243447; }
+        .distance-close { color: #ff6b6b; font-weight: bold; }
+        .distance-medium { color: #feca57; }
+        .distance-far { color: #48dbfb; }
+        .altitude { color: #a29bfe; }
+        .speed { color: #6c5ce7; }
+        .no-data {
+            text-align: center;
+            padding: 40px;
+            color: #8892b0;
+        }
+        .update-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: #4fc3f7;
+            border-radius: 50%;
+            margin-left: 10px;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.3; }
+            100% { opacity: 1; }
+        }
+        .flight-link {
+            color: #4fc3f7;
+            text-decoration: none;
+        }
+        .flight-link:hover { text-decoration: underline; }
+        .closest-approach {
+            background: #2a3f5f;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #ff6b6b;
+        }
+        .loading { opacity: 0.5; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>FlightTrak Dashboard <span class="update-indicator"></span></h1>
+            <p>Real-time aircraft monitoring from planes.hamm.me</p>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value" id="current-count">0</div>
+                <div class="stat-label">Aircraft in Range</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="total-seen">0</div>
+                <div class="stat-label">Total Tracked</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="max-simultaneous">0</div>
+                <div class="stat-label">Max Simultaneous</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="closest-approach">--</div>
+                <div class="stat-label">Closest Approach (mi)</div>
+            </div>
+        </div>
+
+        <div id="closest-info" class="closest-approach" style="display: none;">
+            <strong>Closest Aircraft:</strong> <span id="closest-details"></span>
+        </div>
+
+        <div class="aircraft-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ICAO</th>
+                        <th>Flight</th>
+                        <th>Distance</th>
+                        <th>Altitude</th>
+                        <th>Speed</th>
+                        <th>Heading</th>
+                        <th>Squawk</th>
+                        <th>Category</th>
+                        <th>Age</th>
+                    </tr>
+                </thead>
+                <tbody id="aircraft-tbody">
+                    <tr><td colspan="9" class="no-data">Loading aircraft data...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        let updateTimer;
+        
+        function formatDistance(distance) {
+            if (!distance) return '--';
+            let className = 'distance-far';
+            if (distance < 10) className = 'distance-close';
+            else if (distance < 30) className = 'distance-medium';
+            return `<span class="${className}">${distance} mi</span>`;
+        }
+        
+        function formatAltitude(alt) {
+            if (!alt) return '--';
+            return `<span class="altitude">${alt.toLocaleString()} ft</span>`;
+        }
+        
+        function formatSpeed(speed) {
+            if (!speed) return '--';
+            return `<span class="speed">${Math.round(speed)} kt</span>`;
+        }
+        
+        function formatFlight(flight, hex) {
+            if (!flight || flight.trim() === '') return hex;
+            return `<a href="https://flightaware.com/live/flight/${flight}" 
+                    target="_blank" class="flight-link">${flight}</a>`;
+        }
+        
+        function updateDashboard() {
+            fetch('/api/aircraft')
+                .then(response => response.json())
+                .then(data => {
+                    // Update stats
+                    document.getElementById('current-count').textContent = data.stats.current;
+                    document.getElementById('total-seen').textContent = data.stats.total_seen;
+                    document.getElementById('max-simultaneous').textContent = data.stats.max_simultaneous;
+                    document.getElementById('closest-approach').textContent = 
+                        data.stats.closest_approach < 1000 ? data.stats.closest_approach : '--';
+                    
+                    // Update closest aircraft info
+                    if (data.stats.closest_aircraft) {
+                        const closest = data.stats.closest_aircraft;
+                        document.getElementById('closest-info').style.display = 'block';
+                        document.getElementById('closest-details').innerHTML = 
+                            `${closest.flight || closest.hex} at ${data.stats.closest_approach} miles`;
+                    }
+                    
+                    // Update aircraft table
+                    const tbody = document.getElementById('aircraft-tbody');
+                    tbody.classList.add('loading');
+                    
+                    if (data.aircraft.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="9" class="no-data">No aircraft in range</td></tr>';
+                    } else {
+                        tbody.innerHTML = data.aircraft.map(aircraft => `
+                            <tr>
+                                <td>${aircraft.hex}</td>
+                                <td>${formatFlight(aircraft.flight, aircraft.hex)}</td>
+                                <td>${formatDistance(aircraft.distance)}</td>
+                                <td>${formatAltitude(aircraft.alt_baro || aircraft.alt_geom)}</td>
+                                <td>${formatSpeed(aircraft.gs)}</td>
+                                <td>${aircraft.track || '--'}°</td>
+                                <td>${aircraft.squawk || '--'}</td>
+                                <td>${aircraft.category || '--'}</td>
+                                <td>${aircraft.age}s</td>
+                            </tr>
+                        `).join('');
+                    }
+                    
+                    tbody.classList.remove('loading');
+                })
+                .catch(error => {
+                    console.error('Error fetching data:', error);
+                    document.getElementById('aircraft-tbody').innerHTML = 
+                        '<tr><td colspan="9" class="no-data">Error loading data</td></tr>';
+                });
+        }
+        
+        // Initial load
+        updateDashboard();
+        
+        // Update every 2 seconds
+        updateTimer = setInterval(updateDashboard, 2000);
+        
+        // Clean up on page unload
+        window.addEventListener('beforeunload', () => {
+            if (updateTimer) clearInterval(updateTimer);
+        });
+    </script>
+</body>
+</html>

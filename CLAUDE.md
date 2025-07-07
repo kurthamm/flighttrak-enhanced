@@ -156,10 +156,13 @@ flighttrak/
 │   ├── config.json
 │   ├── aircraft_list.json
 │   └── detected_aircraft.txt
-├── Legacy (kept for compatibility)
-│   ├── fa_enhanced_v2.py
-│   ├── fa.py
-│   └── web_dashboard.py
+├── legacy/ (archived files)
+│   ├── fa.py                  # Original flight service
+│   ├── fa_enhanced.py         # Enhanced version  
+│   ├── fa_enhanced_v2.py      # Latest legacy
+│   ├── web_dashboard.py       # Original dashboard
+│   ├── dashboard.html         # Original template
+│   └── README.md              # Legacy documentation
 └── Utilities
     ├── caf.py
     ├── merge_plane_data.py

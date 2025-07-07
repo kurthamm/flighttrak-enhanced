@@ -7,10 +7,23 @@ __pycache__/
 *.pyc
 *.pyo
 
-# Logs and data files
+# Logs and runtime data
 *.log
 detected_aircraft.txt
+data_backups/
+dashboard.log
+dashboard_enhanced.log
+ai_intelligence_service.log
 flightalert.log
+
+# Databases (runtime data)
+*.db
+*.sqlite3
+aircraft_cache.db
+contextual_intelligence.db
+intelligence.db
+flight_paths.db
+weather_data.db
 
 # Large data files
 *.xlsx
@@ -28,3 +41,8 @@ aircraft_list_merged.json
 # Temporary files
 *.tmp
 *.bak
+*.backup_*
+
+# Cache
+.cache/
+*.cache
