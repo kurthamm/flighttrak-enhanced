@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FlightTrak Enhanced Dashboard</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { 
@@ -176,6 +177,20 @@
                 grid-template-columns: 1fr;
             }
         }
+        #map {
+            height: 500px;
+            border-radius: 8px;
+            border: 1px solid #2a3f5f;
+            margin-top: 20px;
+        }
+        .aircraft-icon {
+            background: none;
+            border: none;
+        }
+        .home-marker {
+            background: none;
+            border: none;
+        }
     </style>
 </head>
 <body>
@@ -235,6 +250,12 @@
                         </table>
                     </div>
                 </div>
+                
+                <!-- Map View -->
+                <div class="section">
+                    <div class="section-header">🗺️ Live Aircraft Map</div>
+                    <div id="map"></div>
+                </div>
             </div>
 
             <div class="sidebar">
@@ -272,8 +293,89 @@
         </div>
     </div>
 
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
         let updateTimer;
+        let map;
+        let aircraftMarkers = {};
+        let homeMarker;
+        
+        // Initialize map
+        function initMap() {
+            map = L.map('map').setView([34.1133171, -80.9024019], 10);
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+            
+            // Add home marker
+            const homeIcon = L.divIcon({
+                html: '<div style="background: #4a90e2; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.4);"></div>',
+                iconSize: [20, 20],
+                className: 'home-marker'
+            });
+            homeMarker = L.marker([34.1133171, -80.9024019], {icon: homeIcon})
+                .bindPopup('<b>Home Location</b>')
+                .addTo(map);
+        }
+        
+        // Update aircraft on map
+        function updateMapAircraft(aircraft) {
+            // Remove markers for aircraft no longer present
+            Object.keys(aircraftMarkers).forEach(hex => {
+                if (!aircraft.find(ac => ac.hex === hex)) {
+                    map.removeLayer(aircraftMarkers[hex]);
+                    delete aircraftMarkers[hex];
+                }
+            });
+            
+            // Update or add markers
+            aircraft.forEach(ac => {
+                if (!ac.lat || !ac.lon) return;
+                
+                const rotation = ac.track || 0;
+                const isEmergency = ac.squawk === '7700' || ac.squawk === '7600' || ac.squawk === '7500';
+                const color = isEmergency ? '#ff6b6b' : (ac.distance < 10 ? '#feca57' : '#4fc3f7');
+                
+                const icon = L.divIcon({
+                    html: `<div style="transform: rotate(${rotation}deg); font-size: 20px; color: ${color};">✈️</div>`,
+                    iconSize: [24, 24],
+                    className: 'aircraft-icon'
+                });
+                
+                const popupContent = `
+                    <div style="min-width: 200px;">
+                        <h4 style="margin: 0 0 5px 0; color: #4fc3f7;">
+                            ${ac.flight?.trim() || ac.hex}
+                        </h4>
+                        <table style="font-size: 12px;">
+                            <tr><td><b>Altitude:</b></td><td>${(ac.alt_baro || 0).toLocaleString()} ft</td></tr>
+                            <tr><td><b>Speed:</b></td><td>${(ac.gs || 0).toFixed(0)} kts</td></tr>
+                            <tr><td><b>Distance:</b></td><td>${(ac.distance || 0).toFixed(1)} mi</td></tr>
+                            <tr><td><b>Heading:</b></td><td>${(ac.track || 0).toFixed(0)}°</td></tr>
+                            <tr><td><b>Squawk:</b></td><td>${ac.squawk || '--'}</td></tr>
+                        </table>
+                        <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #ccc;">
+                            <a href="https://flightaware.com/live/flight/${ac.flight?.trim() || ac.hex}" target="_blank">FlightAware</a> |
+                            <a href="https://www.flightradar24.com/data/aircraft/${ac.hex}" target="_blank">FR24</a> |
+                            <a href="https://globe.adsbexchange.com/?icao=${ac.hex}" target="_blank">Track</a>
+                        </div>
+                    </div>
+                `;
+                
+                if (aircraftMarkers[ac.hex]) {
+                    // Update existing marker
+                    aircraftMarkers[ac.hex].setLatLng([ac.lat, ac.lon]);
+                    aircraftMarkers[ac.hex].setIcon(icon);
+                    aircraftMarkers[ac.hex].setPopupContent(popupContent);
+                } else {
+                    // Create new marker
+                    aircraftMarkers[ac.hex] = L.marker([ac.lat, ac.lon], {icon})
+                        .bindPopup(popupContent)
+                        .addTo(map);
+                }
+            });
+        }
         
         function formatDistance(distance) {
             if (!distance) return '--';
@@ -341,6 +443,9 @@
                 document.getElementById('rapid-climbers').textContent = patternsData.rapid_climbers;
                 document.getElementById('circling-aircraft').textContent = patternsData.circling_aircraft;
                 
+                // Update map with aircraft
+                updateMapAircraft(aircraftData.aircraft);
+                
                 // Update aircraft table
                 const tbody = document.getElementById('aircraft-tbody');
                 tbody.classList.add('loading');
@@ -385,6 +490,9 @@
                     '<tr><td colspan="9" class="no-data">Error loading data</td></tr>';
             });
         }
+        
+        // Initialize map when page loads
+        initMap();
         
         // Initial load
         updateDashboard();
