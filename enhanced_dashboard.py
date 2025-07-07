@@ -115,6 +115,9 @@ stats = {
     'emergencies_detected': 0
 }
 
+# Track aircraft seen in last 24 hours
+aircraft_seen_24h = deque(maxlen=1000)  # Store (hex_code, timestamp) tuples
+
 # Flight analyzer data
 flight_patterns = defaultdict(list)
 aircraft_stats = defaultdict(lambda: {
@@ -557,13 +560,24 @@ def update_aircraft_data():
                 current_aircraft[hex_code] = aircraft
                 
                 # Update history
+                current_time = time.time()
                 if hex_code not in aircraft_history:
                     aircraft_history[hex_code] = {
-                        'first_seen': time.time(),
+                        'first_seen': current_time,
                         'positions': deque(maxlen=50),
                         'data': aircraft
                     }
-                    stats['total_seen'] += 1
+                    # Add to 24-hour tracking
+                    aircraft_seen_24h.append((hex_code, current_time))
+                
+                # Update 24-hour count by removing old entries
+                cutoff_time = current_time - 86400  # 24 hours ago
+                while aircraft_seen_24h and aircraft_seen_24h[0][1] < cutoff_time:
+                    aircraft_seen_24h.popleft()
+                
+                # Update total seen to reflect last 24 hours
+                unique_aircraft_24h = set(entry[0] for entry in aircraft_seen_24h)
+                stats['total_seen'] = len(unique_aircraft_24h)
                 
                 # Add position to history
                 if 'lat' in aircraft and 'lon' in aircraft:

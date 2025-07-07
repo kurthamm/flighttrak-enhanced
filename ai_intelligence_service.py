@@ -34,6 +34,7 @@ except ImportError as e:
 from config_manager import config
 from email_service import EmailService
 from utils import haversine_distance, load_json_config
+import time
 
 class AIIntelligenceService:
     """Main service coordinator for AI intelligence systems"""
@@ -56,6 +57,7 @@ class AIIntelligenceService:
         self.load_aircraft_list()
         self.detected_aircraft = set()  # Track recently detected aircraft
         self.recent_anomalies = set()  # Track recent anomaly alerts to prevent spam
+        self.recent_ai_alerts = set()  # Track recent AI intelligence alerts to prevent spam
         
         # Initialize anomaly detector if enabled
         self.anomaly_detector = None
@@ -113,29 +115,19 @@ class AIIntelligenceService:
     def send_tracked_aircraft_alert(self, aircraft: dict, tracked_info: dict, distance: float):
         """Send aircraft detection alert to configured recipients"""
         try:
-            email_cfg = self.config['email_config']
-            alert_cfg = self.config.get('alert_config', {}).get('tracked_aircraft_alerts', {})
-            recipients = alert_cfg.get('recipients', [])
+            recipients = config.get_alert_recipients('tracked_aircraft')
             
             if not recipients:
                 logging.warning("No recipients configured for tracked aircraft alerts")
                 return
             
-            # Create rich HTML email for tracked aircraft
-            html_content = self.generate_tracked_aircraft_email(aircraft, tracked_info, distance)
+            # Use unified email service
+            success = self.email_service.send_aircraft_alert(aircraft, tracked_info, distance, recipients)
             
-            subject = f"✈️ FlightTrak Alert: {tracked_info.get('description', 'Tracked Aircraft')} Detected"
-            
-            message = Mail(
-                from_email=email_cfg['sender'],
-                to_emails=recipients,
-                subject=subject,
-                html_content=html_content
-            )
-            
-            sg = SendGridAPIClient(email_cfg['sendgrid_api_key'])
-            resp = sg.send(message)
-            logging.info(f"Tracked aircraft alert sent to {len(recipients)} recipients (status {resp.status_code})")
+            if success:
+                logging.info(f"Tracked aircraft alert sent to {len(recipients)} recipients")
+            else:
+                logging.error("Failed to send tracked aircraft alert")
             
         except Exception as e:
             logging.error(f"Error sending tracked aircraft alert: {e}")
@@ -192,58 +184,30 @@ class AIIntelligenceService:
     def send_ai_intelligence_alert(self, event_intel):
         """Send AI intelligence alert to configured recipients"""
         try:
-            email_cfg = self.config['email_config']
-            alert_cfg = self.config.get('alert_config', {}).get('ai_intelligence_alerts', {})
-            recipients = alert_cfg.get('recipients', [])
+            recipients = config.get_alert_recipients('ai_intelligence')
             
             if not recipients:
                 logging.warning("No recipients configured for AI intelligence alerts")
                 return
             
-            # Use the AI detector's enhanced alert generation
-            if self.ai_detector.claude_enhancer:
-                try:
-                    event_data = {
-                        'event_type': event_intel.event_type,
-                        'confidence': event_intel.confidence,
-                        'severity': event_intel.severity,
-                        'location': event_intel.location,
-                        'timestamp': event_intel.timestamp,
-                        'aircraft_involved': event_intel.aircraft_involved,
-                        'pattern_signature': event_intel.pattern_signature,
-                        'contextual_analysis': event_intel.context_data
-                    }
-                    
-                    # Get Claude's enhanced analysis
-                    claude_analysis = self.ai_detector.claude_enhancer.enhance_event_analysis(event_data)
-                    
-                    # Generate enhanced email with Claude's analysis
-                    html_content = self.ai_detector.claude_enhancer.generate_enhanced_alert_email(event_data, claude_analysis)
-                    
-                    # Update narrative with Claude's enhanced version
-                    event_intel.narrative = claude_analysis.narrative
-                    
-                except Exception as e:
-                    logging.error(f"Claude enhancement failed, using fallback: {e}")
-                    html_content = self.ai_detector.generate_fallback_email(event_intel)
+            # Prepare event data for email service
+            event_data = {
+                'event_type': event_intel.event_type,
+                'confidence': event_intel.confidence,
+                'severity': event_intel.severity,
+                'location': getattr(event_intel, 'location', 'Unknown'),
+                'description': getattr(event_intel, 'narrative', 'AI intelligence event detected'),
+                'aircraft_involved': getattr(event_intel, 'aircraft_involved', []),
+                'timestamp': getattr(event_intel, 'timestamp', time.time())
+            }
+            
+            # Use unified email service
+            success = self.email_service.send_ai_intelligence_alert(event_data, recipients)
+            
+            if success:
+                logging.info(f"AI Intelligence alert sent to {len(recipients)} recipients: {event_intel.event_type}")
             else:
-                # Use fallback email generation
-                html_content = self.ai_detector.generate_fallback_email(event_intel)
-            
-            subject = f"🧠 FlightTrak AI Alert: {event_intel.event_type.replace('_', ' ').title()} [{event_intel.severity}]"
-            if self.ai_detector.claude_enhancer:
-                subject += " - Enhanced by Claude AI"
-            
-            message = Mail(
-                from_email=email_cfg['sender'],
-                to_emails=recipients,
-                subject=subject,
-                html_content=html_content
-            )
-            
-            sg = SendGridAPIClient(email_cfg['sendgrid_api_key'])
-            resp = sg.send(message)
-            logging.info(f"AI Intelligence alert sent to {len(recipients)} recipients: {event_intel.event_id} (status {resp.status_code})")
+                logging.error("Failed to send AI intelligence alert")
             
         except Exception as e:
             logging.error(f"Error sending AI intelligence alert: {e}")
@@ -251,36 +215,21 @@ class AIIntelligenceService:
     def send_anomaly_alert(self, anomaly: dict):
         """Send anomaly alert to configured recipients"""
         try:
-            anomaly_cfg = self.config.get('alert_config', {}).get('anomaly_alerts', {})
-            if not anomaly_cfg.get('enabled', False):
+            if not config.is_alert_enabled('anomaly'):
                 return
             
-            recipients = anomaly_cfg.get('recipients', [])
+            recipients = config.get_alert_recipients('anomaly')
             if not recipients:
                 logging.warning("No recipients configured for anomaly alerts")
                 return
             
-            email_cfg = self.config['email_config']
-            aircraft = anomaly['aircraft']
+            # Use unified email service
+            success = self.email_service.send_anomaly_alert(anomaly, recipients)
             
-            # Generate HTML content for anomaly alert
-            html_content = self.generate_anomaly_email(anomaly, aircraft)
-            
-            # Get severity emoji
-            severity_emoji = {'CRITICAL': '🚨', 'HIGH': '⚠️', 'MEDIUM': '⚡', 'LOW': '🔍'}.get(anomaly['severity'], '⚠️')
-            
-            subject = f"{severity_emoji} FlightTrak Anomaly Alert"
-            
-            message = Mail(
-                from_email=email_cfg['sender'],
-                to_emails=recipients,
-                subject=subject,
-                html_content=html_content
-            )
-            
-            sg = SendGridAPIClient(email_cfg['sendgrid_api_key'])
-            resp = sg.send(message)
-            logging.info(f"Anomaly alert sent to {len(recipients)} recipients: {anomaly['type']} (status {resp.status_code})")
+            if success:
+                logging.info(f"Anomaly alert sent to {len(recipients)} recipients: {anomaly.get('type', 'unknown')}")
+            else:
+                logging.error("Failed to send anomaly alert")
             
         except Exception as e:
             logging.error(f"Error sending anomaly alert: {e}")
@@ -364,29 +313,36 @@ class AIIntelligenceService:
                     self.check_tracked_aircraft(aircraft_list)
                     
                     # Run AI intelligence analysis (if enabled)
-                    ai_alert_cfg = self.config.get('alert_config', {}).get('ai_intelligence_alerts', {})
-                    if ai_alert_cfg.get('enabled', False):
+                    if config.is_alert_enabled('ai_intelligence'):
                         events = self.ai_detector.analyze_aircraft_data(aircraft_list)
                         
                         # Process detected AI events
                         for event in events:
                             # Check confidence threshold
-                            min_confidence = ai_alert_cfg.get('min_confidence', 0.6)
+                            min_confidence = config.get('alerts.ai_intelligence.min_confidence', 0.6)
                             if event.confidence < min_confidence:
                                 continue
                                 
-                            # Check if we've already alerted on this event recently
-                            if not self.ai_detector.is_duplicate_event(event):
+                            # Create unique key for this event type
+                            event_key = f"{event.event_type}_{int(time.time() // 1800)}"  # 30-minute windows
+                            
+                            # Check if we've already alerted on this event recently (double check)
+                            if (not self.ai_detector.is_duplicate_event(event) and 
+                                event_key not in self.recent_ai_alerts):
+                                
                                 # Store in database
                                 self.ai_detector.store_event_intelligence(event)
                                 
                                 # Send AI intelligence alert to configured recipients
                                 self.send_ai_intelligence_alert(event)
                                 
-                                # Add to active events
+                                # Add to deduplication tracking
+                                self.recent_ai_alerts.add(event_key)
                                 self.ai_detector.active_events[event.event_id] = event
                                 
                                 logging.info(f"AI Event detected: {event.event_type} with {len(event.aircraft_involved)} aircraft")
+                            else:
+                                logging.debug(f"AI Event {event.event_type} skipped - duplicate or recent")
                     
                     # Run anomaly detection (if enabled)
                     if self.anomaly_detector:
@@ -399,9 +355,13 @@ class AIIntelligenceService:
                                     self.send_anomaly_alert(anomaly)
                                     self.recent_anomalies.add(anomaly_key)
                                     
-                        # Clean up old anomaly keys (keep only last hour)
+                        # Clean up old alert keys (keep only last 2 hours)
                         current_window = int(time.time() // 300)
-                        self.recent_anomalies = {key for key in self.recent_anomalies if int(key.split('_')[-1]) > current_window - 12}
+                        self.recent_anomalies = {key for key in self.recent_anomalies if int(key.split('_')[-1]) > current_window - 24}
+                        
+                        # Clean up old AI alert keys (keep only last 2 hours)
+                        current_ai_window = int(time.time() // 1800)
+                        self.recent_ai_alerts = {key for key in self.recent_ai_alerts if int(key.split('_')[-1]) > current_ai_window - 4}
                     
                     time.sleep(15)  # Check every 15 seconds
                     
