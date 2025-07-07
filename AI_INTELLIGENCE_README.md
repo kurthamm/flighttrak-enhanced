@@ -62,7 +62,7 @@ pip install -r requirements.txt
 ### Configuration
 The system uses your existing `config.json` for:
 - Home coordinates for distance calculations
-- Email configuration for SendGrid alerts
+- Email configuration for Gmail SMTP alerts
 - FlightAware API keys for aircraft lookups
 
 ### Starting the AI Intelligence System
@@ -181,7 +181,7 @@ Confidence Level: MEDIUM (0.76)
 ### Data Handling
 - Local SQLite storage only
 - No cloud data transmission except alerts
-- Encrypted email delivery via SendGrid
+- Encrypted email delivery via Gmail SMTP with TLS
 - Configurable data retention periods
 
 ### Privacy Considerations
