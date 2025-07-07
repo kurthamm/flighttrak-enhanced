@@ -154,12 +154,8 @@ class EmailService:
                 
                 <div style='text-align:center;margin:20px 0;'>
                     <a href='https://flightaware.com/live/flight/{aircraft.get("hex", "").upper()}' 
-                       style='background:#4CAF50;color:white;padding:12px 25px;text-decoration:none;border-radius:5px;font-weight:bold;margin:5px;'>
-                        FlightAware
-                    </a>
-                    <a href='https://www.flightradar24.com/data/aircraft/{aircraft.get("hex", "").upper()}' 
-                       style='background:#1976D2;color:white;padding:12px 25px;text-decoration:none;border-radius:5px;font-weight:bold;margin:5px;'>
-                        FlightRadar24
+                       style='background:#4CAF50;color:white;padding:12px 25px;text-decoration:none;border-radius:5px;font-weight:bold;'>
+                        Track on FlightAware
                     </a>
                 </div>
                 

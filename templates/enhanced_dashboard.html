@@ -379,9 +379,7 @@
                             <tr><td><b>Squawk:</b></td><td>${ac.squawk || '--'}</td></tr>
                         </table>
                         <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #ccc;">
-                            <a href="https://flightaware.com/live/flight/${ac.flight?.trim() || ac.hex}" target="_blank">FlightAware</a> |
-                            <a href="https://www.flightradar24.com/data/aircraft/${ac.hex}" target="_blank">FR24</a> |
-                            <a href="https://globe.adsbexchange.com/?icao=${ac.hex}" target="_blank">Track</a>
+                            <a href="https://flightaware.com/live/flight/${ac.flight?.trim() || ac.hex}" target="_blank" style="font-weight: bold;">Track on FlightAware</a>
                         </div>
                     </div>
                 `;
@@ -421,13 +419,11 @@
         function formatFlight(flight, hex) {
             if (!flight || flight.trim() === '') {
                 return `${hex} 
-                    <a href="https://www.flightradar24.com/data/aircraft/${hex}" 
-                       target="_blank" class="flight-link" title="View on Flightradar24">[FR24]</a>`;
+                    <a href="https://flightaware.com/live/flight/${hex}" 
+                       target="_blank" class="flight-link" title="View on FlightAware">[FA]</a>`;
             }
             return `<a href="https://flightaware.com/live/flight/${flight}" 
-                    target="_blank" class="flight-link" title="View on FlightAware">${flight}</a>
-                    <a href="https://www.flightradar24.com/data/flights/${flight}" 
-                       target="_blank" class="flight-link" title="View on Flightradar24">[FR24]</a>`;
+                    target="_blank" class="flight-link" title="View on FlightAware">${flight}</a>`;
         }
         
         function formatAnalysis(analysis) {
@@ -494,8 +490,7 @@
                             <td>${formatAltitude(aircraft.alt_baro || aircraft.alt_geom)}</td>
                             <td>${formatSpeed(aircraft.gs)}</td>
                             <td>${aircraft.track || '--'}°</td>
-                            <td>${aircraft.squawk || '--'} <a href="https://globe.adsbexchange.com/?icao=${aircraft.hex}" 
-                                target="_blank" class="flight-link" title="Track on ADS-B Exchange">[Track]</a></td>
+                            <td>${aircraft.squawk || '--'}</td>
                             <td>${formatAnalysis(aircraft.analysis)}</td>
                             <td>${aircraft.age}s</td>
                         </tr>
