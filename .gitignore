@@ -1,0 +1,30 @@
+# Environment and secrets
+.env
+config.json
+venv/
+venv_old/
+__pycache__/
+*.pyc
+*.pyo
+
+# Logs and data files
+*.log
+detected_aircraft.txt
+flightalert.log
+
+# Large data files
+*.xlsx
+aircraft_list_merged.json
+
+# System files
+.DS_Store
+*.swp
+*.swo
+
+# IDE files
+.vscode/
+.idea/
+
+# Temporary files
+*.tmp
+*.bak

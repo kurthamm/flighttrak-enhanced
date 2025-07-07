@@ -1,0 +1,363 @@
+{
+  "aircraft_to_detect": [
+    {
+      "icao": "ADFDF8",
+      "tail_number": "N/A",
+      "model": "Boeing VC-25A",
+      "owner": "U.S. Air Force (Air Force One)",
+      "description": "Primary Presidential 747"
+    },
+    {
+      "icao": "ADFDF9",
+      "tail_number": "N/A",
+      "model": "Boeing VC-25A",
+      "owner": "U.S. Air Force (Air Force One Alternate)",
+      "description": "Secondary Presidential 747"
+    },
+    {
+      "icao": "ADFDFA",
+      "tail_number": "VH-3D",
+      "model": "Sikorsky VH-3D",
+      "owner": "U.S. Marine Corps (Marine One H-3 Puma)"
+    },
+    {
+      "icao": "ADFDFF",
+      "tail_number": "VH-60N",
+      "model": "Sikorsky VH-60N",
+      "owner": "U.S. Marine Corps (Marine One HH-60)"
+    },
+    {
+      "icao": "A6AA76",
+      "tail_number": "N528B",
+      "model": "Boeing B-29 Superfortress",
+      "owner": "Commemorative Air Force (FIFI)",
+      "description": "Historic warbird"
+    },
+    {
+      "icao": "A6BB3A",
+      "tail_number": "N494DF",
+      "model": "Ford Trimotor",
+      "owner": "Experimental Aircraft Association",
+      "description": "Historic aircraft"
+    },
+    {
+      "icao": "43C2B2",
+      "tail_number": "M-EDZE",
+      "model": "Bombardier Global Express",
+      "owner": "Elton John"
+    },
+    {
+      "icao": "400878",
+      "tail_number": "G-SUGA",
+      "model": "Gulfstream G550",
+      "owner": "Alan Sugar"
+    },
+    {
+      "icao": "A029E0",
+      "tail_number": "N11AF",
+      "model": "Gulfstream G700",
+      "owner": "Jeff Bezos"
+    },
+    {
+      "icao": "A029E0",
+      "tail_number": "N758PB",
+      "model": "Gulfstream G650",
+      "owner": "Jeff Bezos"
+    },
+    {
+      "icao": "A18845",
+      "tail_number": "N1980K",
+      "model": "Gulfstream G650ER",
+      "owner": "Kim Kardashian"
+    },
+    {
+      "icao": "A4AEB6",
+      "tail_number": "N272BG",
+      "model": "Gulfstream V",
+      "owner": "Elon Musk"
+    },
+    {
+      "icao": "A835AF",
+      "tail_number": "N628TS",
+      "model": "Gulfstream G650ER",
+      "owner": "Elon Musk"
+    },
+    {
+      "icao": "A22C64",
+      "tail_number": "N707JT",
+      "model": "Gulfstream GIII",
+      "owner": "John Travolta"
+    },
+    {
+      "icao": "A231EA",
+      "tail_number": "N162JC",
+      "model": "Gulfstream V",
+      "owner": "Jim Carrey"
+    },
+    {
+      "icao": "A4A8CD",
+      "tail_number": "N444WT",
+      "model": "Bombardier Global 7500",
+      "owner": "Matt Damon"
+    },
+    {
+      "icao": "A4A9E2",
+      "tail_number": "N5MV",
+      "model": "Dassault Falcon 900",
+      "owner": "Michael Bloomberg"
+    },
+    {
+      "icao": "A4A9E4",
+      "tail_number": "N47EG",
+      "model": "Dassault Falcon 900",
+      "owner": "Michael Bloomberg"
+    },
+    {
+      "icao": "A4A9E5",
+      "tail_number": "N8AG",
+      "model": "Dassault Falcon 900",
+      "owner": "Michael Bloomberg"
+    },
+    {
+      "icao": "A4AFCD",
+      "tail_number": "N236MJ",
+      "model": "Gulfstream G550",
+      "owner": "Michael Jordan"
+    },
+    {
+      "icao": "A4B29D",
+      "tail_number": "N898NC",
+      "model": "Gulfstream G650",
+      "owner": "Rupert Murdoch"
+    },
+    {
+      "icao": "A4BEB9",
+      "tail_number": "N757AF",
+      "model": "Boeing 757",
+      "owner": "Donald Trump"
+    },
+    {
+      "icao": "A448CC",
+      "tail_number": "N898TS",
+      "model": "Dassault Falcon 900",
+      "owner": "Taylor Swift"
+    },
+    {
+      "icao": "A4673E",
+      "tail_number": "N767CJ",
+      "model": "Boeing 767",
+      "owner": "Drake"
+    },
+    {
+      "icao": "A47CB5",
+      "tail_number": "N621MM",
+      "model": "Dassault Falcon 7X",
+      "owner": "Taylor Swift"
+    },
+    {
+      "icao": "A61C3A",
+      "tail_number": "N517TW",
+      "model": "Gulfstream V",
+      "owner": "Tiger Woods"
+    },
+    {
+      "icao": "A61D4E",
+      "tail_number": "N709DS",
+      "model": "Gulfstream G650",
+      "owner": "Steve Ballmer"
+    },
+    {
+      "icao": "A61F99",
+      "tail_number": "N650HA",
+      "model": "Gulfstream G650",
+      "owner": "Marc Benioff"
+    },
+    {
+      "icao": "A62EA1",
+      "tail_number": "N713TS",
+      "model": "Embraer E-190",
+      "owner": "Travis Scott"
+    },
+    {
+      "icao": "A62F4D",
+      "tail_number": "N444SC",
+      "model": "Gulfstream V",
+      "owner": "Jay-Z"
+    },
+    {
+      "icao": "A632F4",
+      "tail_number": "N6453",
+      "model": "Gulfstream G650",
+      "owner": "Nike, Inc."
+    },
+    {
+      "icao": "A65DF9",
+      "tail_number": "N817GS",
+      "model": "Gulfstream G650",
+      "owner": "Larry Ellison"
+    },
+    {
+      "icao": "A67DBE",
+      "tail_number": "N943FL",
+      "model": "Cessna Citation Latitude",
+      "owner": "Ron DeSantis"
+    },
+    {
+      "icao": "A69F9E",
+      "tail_number": "N555QB",
+      "model": "Cessna Citation 750",
+      "owner": "Judge Judy"
+    },
+    {
+      "icao": "A69FE2",
+      "tail_number": "N232G",
+      "model": "Gulfstream G650",
+      "owner": "Sergey Brin"
+    },
+    {
+      "icao": "A6AC73",
+      "tail_number": "N921MT",
+      "model": "Bombardier Global Express",
+      "owner": "Mark Cuban"
+    },
+    {
+      "icao": "A6B42A",
+      "tail_number": "N652WE",
+      "model": "Gulfstream G650",
+      "owner": "Eric Schmidt"
+    },
+    {
+      "icao": "A6B6C2",
+      "tail_number": "N221DG",
+      "model": "Gulfstream G650",
+      "owner": "David Geffen"
+    },
+    {
+      "icao": "A6B67D",
+      "tail_number": "N950PB",
+      "model": "Bombardier Global Express",
+      "owner": "Playboy Corporation"
+    },
+    {
+      "icao": "A6BDE1",
+      "tail_number": "N878DB",
+      "model": "Gulfstream V",
+      "owner": "Peter Thiel"
+    },
+    {
+      "icao": "A6BB3A",
+      "tail_number": "N494DF",
+      "model": "Ford Trimotor",
+      "owner": "Experimental Aircraft Association"
+    },
+    {
+      "icao": "A6BDB1",
+      "tail_number": "N32MJ",
+      "model": "Gulfstream II",
+      "owner": "Magic Johnson"
+    },
+    {
+      "icao": "A6C1C2",
+      "tail_number": "N7KC",
+      "model": "Dassault Falcon 900",
+      "owner": "Kenny Chesney"
+    },
+    {
+      "icao": "A6C1E3",
+      "tail_number": "N887WM",
+      "model": "Bombardier Global Express",
+      "owner": "Bill Gates"
+    },
+    {
+      "icao": "A6C3F2",
+      "tail_number": "N194WM",
+      "model": "Gulfstream G650",
+      "owner": "Bill Gates"
+    },
+    {
+      "icao": "A6C498",
+      "tail_number": "N1969C",
+      "model": "Gulfstream V",
+      "owner": "P. Diddy"
+    },
+    {
+      "icao": "A6CFE5",
+      "tail_number": "N506AB",
+      "model": "Learjet 60",
+      "owner": "Luke Bryan"
+    },
+    {
+      "icao": "A6D918",
+      "tail_number": "N6GU",
+      "model": "Cessna Citation Sovereign",
+      "owner": "Harrison Ford"
+    },
+    {
+      "icao": "A6D93B",
+      "tail_number": "N800PM",
+      "model": "Gulfstream V",
+      "owner": "Phil Mickelson"
+    },
+    {
+      "icao": "A6DB71",
+      "tail_number": "N701DB",
+      "model": "Gulfstream IV",
+      "owner": "Dan Bilzerian"
+    },
+    {
+      "icao": "A6DFB9",
+      "tail_number": "N313AR",
+      "model": "Gulfstream IV",
+      "owner": "Alex Rodriguez"
+    },
+    {
+      "icao": "A6E445",
+      "tail_number": "N71KR",
+      "model": "Bombardier Challenger 600",
+      "owner": "Kid Rock"
+    },
+    {
+      "icao": "A6E7AB",
+      "tail_number": "N378TP",
+      "model": "Embraer E-190",
+      "owner": "Tyler Perry"
+    },
+    {
+      "icao": "A6EAD1",
+      "tail_number": "N898CE",
+      "model": "Gulfstream V",
+      "owner": "Caesars Palace"
+    },
+    {
+      "icao": "A6EF2B",
+      "tail_number": "N474D",
+      "model": "Gulfstream V",
+      "owner": "Lady Gaga"
+    },
+    {
+      "icao": "A6F2B7",
+      "tail_number": "N818TH",
+      "model": "Dassault Falcon 900",
+      "owner": "Tommy Hilfiger"
+    },
+    {
+      "icao": "A6F6BE",
+      "tail_number": "N838MF",
+      "model": "Gulfstream G650",
+      "owner": "Ronald Perelman"
+    },
+    {
+      "icao": "A6F853",
+      "tail_number": "N958TB",
+      "model": "Gulfstream IV",
+      "owner": "Blake Shelton"
+    },
+    {
+      "icao": "A6F8DE",
+      "tail_number": "N350XX",
+      "model": "Bombardier Challenger 350",
+      "owner": "Tom Cruise"
+    }
+  ]
+}
+

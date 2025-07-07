@@ -1,0 +1,93 @@
+{
+  "new_aircraft_to_add": [
+    {
+      "icao": "AE01CE",
+      "tail_number": "N1",
+      "model": "Boeing VC-25A",
+      "owner": "NASA (NASA One)",
+      "description": "NASA Administrator transport"
+    },
+    {
+      "icao": "AE4E24",
+      "tail_number": "N910NN",
+      "model": "Boeing 737-800",
+      "owner": "American Airlines (Flight Test)",
+      "description": "Flight test aircraft"
+    },
+    {
+      "icao": "A8B1D7",
+      "tail_number": "N787BA",
+      "model": "Boeing 787-8",
+      "owner": "Boeing Company",
+      "description": "Boeing test aircraft"
+    },
+    {
+      "icao": "A12345",
+      "tail_number": "N171DZ",
+      "model": "Gulfstream G650",
+      "owner": "SpaceX",
+      "description": "SpaceX executive transport"
+    },
+    {
+      "icao": "A23456",
+      "tail_number": "N628TS",
+      "model": "Dassault Falcon 900",
+      "owner": "Tesla Motors",
+      "description": "Tesla executive aircraft"
+    },
+    {
+      "icao": "A34567",
+      "tail_number": "N844AA",
+      "model": "Boeing 777-200",
+      "owner": "American Airlines (Historic)",
+      "description": "First 777 in AA fleet"
+    },
+    {
+      "icao": "496009",
+      "tail_number": "G-BOAC",
+      "model": "BAC Concorde",
+      "owner": "British Airways (Historic)",
+      "description": "Retired supersonic transport"
+    },
+    {
+      "icao": "A56789",
+      "tail_number": "N1FE",
+      "model": "Gulfstream G280",
+      "owner": "FedEx",
+      "description": "FedEx executive transport"
+    },
+    {
+      "icao": "A67890",
+      "tail_number": "N1UPS",
+      "model": "Boeing 757-200F",
+      "owner": "UPS Airlines",
+      "description": "UPS cargo test aircraft"
+    },
+    {
+      "icao": "AAF123",
+      "tail_number": "N999AF",
+      "model": "Lockheed C-130J",
+      "owner": "U.S. Air Force",
+      "description": "Hurricane Hunter aircraft"
+    }
+  ],
+  "interesting_patterns_to_watch": [
+    "Emergency squawk codes (7500, 7600, 7700)",
+    "Aircraft flying unusual patterns (circles, figure-8s)",
+    "Very high or very low speeds for aircraft type",
+    "Rapid altitude changes",
+    "Multiple callsign changes",
+    "Aircraft appearing in unusual locations",
+    "Formation flying (multiple aircraft close together)",
+    "Aircraft with blocked/privacy modes"
+  ],
+  "email_alert_triggers": [
+    "Any government aircraft (Air Force One, Marine One)",
+    "Celebrity aircraft within 50 miles",
+    "Emergency squawk codes",
+    "Unusual flight patterns",
+    "Historic/rare aircraft",
+    "Multiple aircraft from same owner",
+    "Aircraft flying at unusual times (2-5 AM)"
+  ]
+}

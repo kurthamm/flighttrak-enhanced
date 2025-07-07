@@ -1,0 +1,20 @@
+[Unit]
+Description=FlightAlert Aircraft Monitoring Service
+After=network.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+WorkingDirectory=/root/flighttrak
+Environment="PATH=/root/flighttrak/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+#ExecStartPre=/root/flighttrak/venv/bin/python3 /root/flighttrak/send_service_notification.py start
+ExecStart=/root/flighttrak/venv/bin/python3 /root/flighttrak/fa_enhanced.py
+ExecReload=/root/flighttrak/venv/bin/python3 /root/flighttrak/send_service_notification.py reload
+Restart=always
+RestartSec=10
+StandardOutput=append:/root/flighttrak/flightalert.log
+StandardError=append:/root/flighttrak/flightalert.log
+
+[Install]
+WantedBy=multi-user.target

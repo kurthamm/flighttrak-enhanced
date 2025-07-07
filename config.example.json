@@ -1,0 +1,23 @@
+{
+  "aircraft_file_path": "aircraft_list.json",
+  "flightaware_config": {
+    "flightaware_api_key": "your_flightaware_api_key_here"
+  },
+  "email_config": {
+    "smtp_server": "smtp.sendgrid.net",
+    "smtp_port": 465,
+    "sender": "your_email@example.com",
+    "password": "your_sendgrid_api_key_here",
+    "recipients": [
+      "recipient1@example.com",
+      "recipient2@example.com"
+    ],
+    "notification_email": "admin@example.com",
+    "sendgrid_api_key": "your_sendgrid_api_key_here"
+  },
+  "alive_interval": 86400,  
+  "home": {
+    "lat": 34.1133171,
+    "lon": -80.9024019
+  }
+}
