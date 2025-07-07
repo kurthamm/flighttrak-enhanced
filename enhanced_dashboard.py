@@ -6,6 +6,7 @@ Enhanced FlightTrak Dashboard with integrated flight analyzer, email alerts, and
 import json
 import time
 import requests
+import sys
 from datetime import datetime, timedelta
 from flask import Flask, render_template, jsonify
 import threading
@@ -535,7 +536,9 @@ def update_aircraft_data():
         if data:
             current_aircraft = {}
             
-            for aircraft in data.get('aircraft', []):
+            aircraft_list = data.get('aircraft', [])
+            
+            for aircraft in aircraft_list:
                 hex_code = aircraft.get('hex', '')
                 if not hex_code:
                     continue
@@ -576,21 +579,15 @@ def update_aircraft_data():
                 # Add new aircraft to 24-hour tracking
                 if is_new_aircraft:
                     aircraft_seen_24h.append((hex_code, current_time))
-                    print(f"DEBUG: Added new aircraft {hex_code} to 24h tracking")
                 
                 # Clean up old entries
                 old_length = len(aircraft_seen_24h)
                 while aircraft_seen_24h and aircraft_seen_24h[0][1] < cutoff_time:
                     aircraft_seen_24h.popleft()
                 
-                if len(aircraft_seen_24h) != old_length:
-                    print(f"DEBUG: Cleaned up {old_length - len(aircraft_seen_24h)} old entries")
-                
                 # Update total seen to reflect unique aircraft in last 24 hours
                 unique_aircraft_24h = set(entry[0] for entry in aircraft_seen_24h)
                 stats['total_seen'] = len(unique_aircraft_24h)
-                
-                print(f"DEBUG: 24h tracking has {len(aircraft_seen_24h)} entries, {len(unique_aircraft_24h)} unique aircraft")
                 
                 # Add position to history
                 if 'lat' in aircraft and 'lon' in aircraft:
@@ -718,7 +715,8 @@ def api_aircraft():
         'aircraft': active_aircraft,
         'stats': {
             'current': stats['current_count'],
-            'today_total': today_count,
+            'total_seen': stats['total_seen'],  # Use our new 24-hour tracking
+            'today_total': today_count,  # Keep for compatibility
             'week_total': week_count,
             'max_simultaneous': stats['max_simultaneous'],
             'closest_approach': round(stats['closest_approach'], 1) if stats['closest_approach'] != float('inf') else None,
