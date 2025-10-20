@@ -1,33 +1,40 @@
 # FlightTrak Enhanced 🛩️
 
-A sophisticated real-time aircraft monitoring and alert system with AI-powered intelligence and pattern detection capabilities.
+A sophisticated real-time aircraft monitoring and alert system with Twitter integration and emergency detection capabilities.
 
 ## Features
 
-### 🎯 Core Functionality  
+### 🎯 Core Functionality
 - **Real-time Aircraft Tracking**: Monitor aircraft using ADS-B data from dump1090
-- **Smart Email Alerts**: Gmail SMTP notifications when tracked aircraft are detected
-- **Distance Calculations**: Monitor aircraft within range of your location
+- **Smart Email Alerts**: Gmail SMTP notifications with distance and tracking links
+- **Distance Monitoring**: Prominent distance display from your location
+- **Multiple Tracking Links**: FlightAware, ADS-B Exchange, Google Maps integration
 - **Remote Monitoring**: Connect to remote dump1090 instances via Cloudflare tunnels
 
-### 🧠 AI Intelligence & Pattern Detection
-- **Emergency Detection**: Automatic alerts for emergency squawk codes (7500/7600/7700)
-- **AI Event Analysis**: Machine learning pattern recognition with confidence scoring
-- **Anomaly Detection**: Detect circling, rapid altitude changes, abnormal speeds
-- **Contextual Intelligence**: Multi-source data correlation (news, weather, NOTAMs)
-- **Rich Email Alerts**: Beautiful HTML emails with aircraft details and tracking links
+### 🐦 Twitter/X Integration (NEW!)
+- **Privacy-Respecting Posting**: Automatic social media updates with built-in delays
+- **Aircraft Classification**: Historic, military, celebrity, and government aircraft categories
+- **Smart Delays**: 24-hour delay for celebrity aircraft, immediate for historic/military
+- **Vague Location Reporting**: State-level location only (no exact coordinates)
+- **Post Templates**: Custom formats for different aircraft types
+- **Complete Documentation**: See [TWITTER_SETUP.md](TWITTER_SETUP.md) for setup
+
+### 🚨 Emergency Detection
+- **Emergency Squawk Codes**: Automatic alerts for 7500 (hijack), 7600 (radio failure), 7700 (general emergency), 7777 (military intercept)
+- **Critical Severity Alerts**: Instant notifications for emergency situations
+- **Rich Email Format**: Detailed emergency information with aircraft data
 
 ### 📊 Enhanced Web Dashboard
 - **Interactive Maps**: Live aircraft visualization with Leaflet.js
 - **Real-time Statistics**: Color-coded distances and flight analytics
-- **AI Intelligence Status**: Monitor AI system health and detection confidence
-- **Event Feed**: Live stream of detected patterns and AI alerts
+- **24-Hour Tracking**: View aircraft detected in the last 24 hours
+- **Flight Data Display**: Altitude, speed, heading, vertical rate
 - **Mobile Responsive**: Works on desktop and mobile devices
 
 ### ✈️ Aircraft Tracking
 Pre-configured to monitor interesting aircraft including:
 - **Government Aircraft**: Air Force One, Marine One, military aircraft
-- **Celebrity Jets**: Taylor Swift, Elon Musk, Jeff Bezos, Bill Gates
+- **Celebrity Jets**: Taylor Swift, Elon Musk, Jeff Bezos, Drake
 - **Historic Aircraft**: B-29 FIFI, Ford Trimotor, various warbirds
 - **Business Aviation**: Private jets of notable individuals
 
@@ -37,12 +44,13 @@ Pre-configured to monitor interesting aircraft including:
 - Python 3.10+
 - dump1090 or remote access to ADS-B data
 - Gmail account with app password for email alerts
+- Twitter Developer account (optional, for social media posting)
 
 ### Installation
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/flighttrak-enhanced.git
+   git clone https://github.com/kurthamm/flighttrak-enhanced.git
    cd flighttrak-enhanced
    ```
 
@@ -55,23 +63,32 @@ Pre-configured to monitor interesting aircraft including:
 
 3. **Configure settings**
    ```bash
-   cp config.example.json config.json
-   # Edit config.json with your settings and Gmail credentials
+   # Edit config.json with your settings
+   nano config.json
    ```
 
 4. **Set up Gmail App Password**
    - Enable 2-factor authentication on your Gmail account
    - Generate an app password for FlightTrak
-   - Use this app password in your configuration
+   - Add to config.json under `email_config`
 
-5. **Start the unified monitoring service**
+5. **Set up Twitter Integration (Optional)**
+   - Follow the guide in [TWITTER_SETUP.md](TWITTER_SETUP.md)
+   - Get Twitter API credentials from developer.twitter.com
+   - Add credentials to config.json under `twitter` section
+   - Enable with `"enabled": true` and test with `"dry_run": true`
+
+6. **Start the service**
    ```bash
-   # Option A: Run unified monitor (recommended)
+   # Start unified monitoring service
    python flight_monitor.py
-   
-   # Option B: Run services separately
-   python enhanced_dashboard.py &    # Dashboard on port 5030
-   python ai_intelligence_service.py # AI intelligence
+
+   # Or run as systemd service
+   sudo systemctl start flightalert.service
+
+   # Start enhanced dashboard (separate terminal)
+   python enhanced_dashboard.py
+   # Access at http://localhost:5030
    ```
 
 ## Configuration
@@ -96,42 +113,30 @@ Pre-configured to monitor interesting aircraft including:
       "enabled": true,
       "recipients": ["alerts@example.com"]
     },
-    "ai_intelligence_alerts": {
-      "enabled": true,
-      "recipients": ["ai_alerts@example.com"],
-      "min_confidence": 0.6
-    },
     "anomaly_alerts": {
       "enabled": true,
-      "recipients": ["anomaly_alerts@example.com"]
+      "recipients": ["emergencies@example.com"]
     }
   },
-  "intelligence_apis": {
-    "newsapi_key": "your_newsapi_key",
-    "mapbox_token": "your_mapbox_token",
-    "claude_api_key": "your_claude_key"
+  "twitter": {
+    "enabled": false,
+    "dry_run": true,
+    "api_key": "YOUR_API_KEY",
+    "api_secret": "YOUR_API_SECRET",
+    "access_token": "YOUR_ACCESS_TOKEN",
+    "access_secret": "YOUR_ACCESS_SECRET",
+    "bearer_token": "YOUR_BEARER_TOKEN"
   }
 }
 ```
 
-### Environment Variables (Optional)
-You can also use environment variables to override config.json:
-
-```env
-# Gmail Configuration
-EMAIL_SENDER=your_email@gmail.com
-EMAIL_PASSWORD=your_app_password
-
-# Home Location
-HOME_LAT=34.1133171
-HOME_LON=-80.9024019
-
-# Dashboard
-DASHBOARD_PORT=5030
-```
-
 ### Aircraft List
-Edit `aircraft_list.json` to add/remove aircraft you want to track.
+Edit `aircraft_list.json` to add/remove aircraft you want to track. Each entry includes:
+- ICAO hex code
+- Tail number (registration)
+- Aircraft model
+- Owner/operator
+- Description
 
 ## Usage
 
@@ -141,30 +146,27 @@ Edit `aircraft_list.json` to add/remove aircraft you want to track.
 # Unified monitoring service (recommended)
 python flight_monitor.py
 
-# Enhanced web dashboard with AI intelligence
+# Enhanced web dashboard
 python enhanced_dashboard.py
 # Access at http://localhost:5030
 
-# AI intelligence service (if running separately)  
-python ai_intelligence_service.py
-
 # Utility commands
-python caf.py          # Validate aircraft data with FlightAware API
-python checkaf.py      # Check tail numbers in aircraft list
-python merge_plane_data.py  # Import from Excel spreadsheet
-
-# Legacy services (if needed)
-python legacy/fa_enhanced_v2.py  # Legacy flight monitoring
-python legacy/web_dashboard.py   # Basic dashboard
+python caf.py                   # Validate aircraft with FlightAware API
+python checkaf.py               # Check tail numbers
+python merge_plane_data.py      # Import from Excel spreadsheet
 ```
 
 ### Service Management
 
 ```bash
+# SystemD services
+sudo systemctl status flightalert.service
+sudo systemctl status flighttrak-dashboard.service
+sudo systemctl restart flightalert.service
+
 # View logs
-tail -f flighttrak_monitor.log     # Unified monitor logs
-tail -f flightalert.log            # Legacy service logs
-tail -f dashboard_enhanced.log     # Dashboard logs
+tail -f flighttrak_monitor.log      # Unified monitor logs
+tail -f dashboard.log                # Dashboard logs
 
 # Test email configuration
 python -c "
@@ -182,40 +184,78 @@ print(f'Email sender: {config.get(\"email.sender\")}')
 "
 ```
 
-## AI Intelligence & Pattern Detection
+## Twitter/X Social Media Integration
 
-The system features advanced AI-powered analysis:
+FlightTrak can automatically post aircraft detections to Twitter/X with privacy-respecting features:
 
-### 🧠 AI Event Detection
-- **Machine Learning Classification**: Pattern recognition with confidence scoring
-- **Multi-Source Intelligence**: News, weather, and aviation data correlation
-- **Natural Language Reporting**: AI-generated event summaries
-- **Configurable Thresholds**: Adjust confidence levels for alerts
+### What Gets Posted
+- **Historic Aircraft**: B-29 FIFI, Ford Trimotor, warbirds (immediate posting)
+- **Military/VIP**: Air Force One, government aircraft (immediate posting)
+- **Celebrity Jets**: 24-hour delay for privacy protection
+- **Location Privacy**: Only state-level location (e.g., "South Carolina area")
 
-### 🔍 Anomaly Detection
-- **🚨 Emergency Situations**: Hijack, radio failure, general emergency (7500/7600/7700)
-- **🔄 Circling Patterns**: Aircraft loitering in small areas
-- **📈 Rapid Altitude Changes**: Unusual climb/descent rates
-- **⚡ Speed Anomalies**: Very high or suspiciously low speeds
-- **🆔 Identity Changes**: Aircraft switching callsigns mid-flight
+### Setup Twitter Integration
+See the complete guide: **[TWITTER_SETUP.md](TWITTER_SETUP.md)**
 
-### 📊 Contextual Intelligence
-- **News Correlation**: Aviation incident news matching
-- **Weather Integration**: Weather impact analysis
-- **Geographic Analysis**: Location-based intelligence
-- **Historical Patterns**: Learning from past events
+Quick setup:
+```bash
+# 1. Install dependencies (already in requirements.txt)
+pip install tweepy>=4.14.0
+
+# 2. Get Twitter API credentials from developer.twitter.com
+# 3. Add credentials to config.json
+# 4. Test with dry-run mode first
+# 5. Enable live posting when ready
+```
+
+### Example Tweets
+```
+✈️ Commemorative Air Force (FIFI) spotted!
+Reg: N529B | Type: Boeing B-29 Superfortress
+Alt: 5,000ft | Speed: 180kt
+One of only two flying B-29s worldwide
+Location: South Carolina
+#avgeek #warbird #aviation
+```
+
+## Emergency Detection
+
+FlightTrak monitors for aviation emergency codes:
+
+### Emergency Squawk Codes
+- **7500**: Hijack Alert - Aircraft has been hijacked
+- **7600**: Radio Failure - Lost radio contact with ATC
+- **7700**: General Emergency - Aircraft declaring emergency
+- **7777**: Military Intercept - Military interception in progress
+
+### Emergency Alerts Include
+- Critical severity notification
+- Aircraft details (type, registration, owner)
+- Current altitude, speed, heading
+- Distance from your location
+- Multiple tracking links for real-time monitoring
+
+## Enhanced Email Alerts
+
+Email notifications include:
+- **Prominent Distance Display**: Large, easy-to-read distance from home
+- **Multiple Tracking Links**: FlightAware, ADS-B Exchange, Google Maps
+- **Flight Information**: Callsign, altitude, speed, heading, vertical rate
+- **Aircraft Details**: Owner, model, registration, ICAO hex
+- **Directional Information**: Compass heading with direction (N, NE, E, etc.)
+- **Rich HTML Formatting**: Professional, easy-to-read layout
 
 ## Enhanced Web Dashboard
 
 Access the dashboard at `http://localhost:5030` to see:
 - **Interactive Map**: Live aircraft positions with Leaflet.js
-- **AI Intelligence Status**: Real-time AI system monitoring
-- **Pattern Analysis Metrics**: Anomaly detection results
-- **Event Feed**: Live stream of AI alerts and detections
+- **24-Hour History**: Aircraft detected in the last 24 hours
+- **Statistics Dashboard**: Total tracked, currently airborne, today's detections
 - **Distance-based Color Coding**: Visual proximity indicators
-- **Flight Tracking Links**: Direct links to FlightAware, FlightRadar24, ADS-B Exchange
+- **Flight Details**: Real-time altitude, speed, heading information
+- **Direct Tracking Links**: One-click access to external tracking sites
 
-## Unified Architecture
+## System Architecture
 
 ```
 flighttrak/
@@ -224,22 +264,26 @@ flighttrak/
 │   ├── email_service.py       # Gmail SMTP email handling
 │   ├── config_manager.py      # Centralized configuration
 │   └── utils.py               # Shared utility functions
-├── Intelligence
-│   ├── ai_intelligence_service.py # AI event detection
-│   ├── ai_event_intelligence.py   # ML pattern engine
-│   ├── anomaly_detector.py        # Anomaly detection
-│   └── contextual_intelligence.py # Multi-source analysis
+├── Detection
+│   ├── anomaly_detector.py    # Emergency squawk detection
+│   └── twitter_poster.py      # Twitter/X integration (NEW!)
 ├── Dashboard
-│   ├── enhanced_dashboard.py      # Web dashboard
+│   ├── enhanced_dashboard.py  # Web dashboard
 │   └── templates/enhanced_dashboard.html
 ├── Data
-│   ├── aircraft_list.json         # Tracked aircraft
-│   └── config.json               # System configuration
-├── legacy/                        # Archived legacy files
+│   ├── aircraft_list.json     # Tracked aircraft database
+│   ├── config.json            # System configuration
+│   └── detected_aircraft.txt  # Detection log
+├── Documentation
+│   ├── README.md              # This file
+│   ├── CLAUDE.md              # Developer guide
+│   ├── TWITTER_SETUP.md       # Twitter integration guide (NEW!)
+│   └── API_SETUP_GUIDE.md     # API configuration guide
+├── legacy/                    # Archived legacy files
 └── Utilities
-    ├── caf.py                     # Aircraft validation
-    ├── merge_plane_data.py        # Excel data import
-    └── checkaf.py                 # Tail number checker
+    ├── caf.py                 # Aircraft validation
+    ├── merge_plane_data.py    # Excel data import
+    └── checkaf.py             # Tail number checker
 ```
 
 ## Security & Privacy
@@ -248,6 +292,12 @@ flighttrak/
 - **Gmail SMTP**: Uses encrypted connection with app passwords
 - **No API Costs**: Free Gmail SMTP eliminates per-email charges
 - **TLS Encryption**: All email traffic encrypted in transit
+
+### 🐦 Twitter Privacy
+- **24-Hour Delays**: Celebrity aircraft posted 24 hours after detection
+- **Vague Locations**: State-level only, no exact coordinates
+- **No Real-Time Tracking**: Prevents stalking and privacy violations
+- **Dry-Run Mode**: Test before posting to verify content
 
 ### 🛡️ Configuration Security
 - **Environment Variables**: Support for secure credential storage
@@ -258,9 +308,10 @@ flighttrak/
 ### 📋 Compliance
 Ensure compliance with:
 - Aviation regulations in your jurisdiction
-- API terms of service (FlightAware, Gmail, etc.)
+- API terms of service (FlightAware, Gmail, Twitter, etc.)
 - Privacy laws regarding aircraft tracking
 - Data retention policies
+- Twitter Developer Terms of Service
 
 ## Troubleshooting
 
@@ -277,49 +328,84 @@ server.quit()
 "
 ```
 
+### Twitter Integration Issues
+- **401 Unauthorized**: Check API credentials in config.json
+- **403 Forbidden**: Ensure "Elevated" access in Twitter Developer Portal
+- **No tweets posted**: Check `enabled: true` and `dry_run: false`
+- See [TWITTER_SETUP.md](TWITTER_SETUP.md) for detailed troubleshooting
+
 ### Common Issues
 - **Email not sending**: Check Gmail app password and 2FA setup
-- **AI intelligence offline**: Verify Claude API key and internet connection
 - **No aircraft detected**: Confirm planes.hamm.me accessibility
 - **Dashboard not loading**: Check port 5030 availability
+- **Service not starting**: Check logs in flighttrak_monitor.log
 
 ### Log Analysis
 ```bash
 # Monitor real-time logs
 tail -f flighttrak_monitor.log    # Main service
-tail -f dashboard_enhanced.log    # Dashboard
-tail -f ai_intelligence_service.log # AI system
+tail -f dashboard.log             # Dashboard
 
 # Check for errors
 grep -i error *.log
 grep -i "email.*fail" *.log
+
+# Check Twitter posting
+grep -i twitter flighttrak_monitor.log
+grep "DRY RUN\|Posted tweet" flighttrak_monitor.log
 ```
+
+## Recent Updates (October 2025)
+
+### Twitter/X Integration
+- Complete social media posting system
+- Privacy-respecting delays and location handling
+- Aircraft classification system
+- Dry-run testing mode
+
+### Enhanced Email Alerts
+- Prominent distance display
+- Multiple tracking links (FlightAware, ADS-B Exchange, Google Maps)
+- Directional information with compass headings
+- Vertical rate and flight status
+
+### Simplified Architecture
+- Removed over-engineered AI intelligence system
+- Streamlined anomaly detection (emergency squawks only)
+- Updated aircraft database with detailed descriptions
+- Improved documentation and setup guides
 
 ## Migration from Legacy
 
-If upgrading from the old SendGrid-based system:
+If upgrading from the old system:
 
 1. **Update configuration** to use Gmail SMTP format
 2. **Generate Gmail app password** and update config
 3. **Switch to unified services**: Use `flight_monitor.py` instead of `fa_enhanced_v2.py`
-4. **Update service files** to point to new entry points
-5. **Test email delivery** before disabling legacy services
+4. **Optional: Set up Twitter integration** following [TWITTER_SETUP.md](TWITTER_SETUP.md)
+5. **Update service files** to point to new entry points
+6. **Test email delivery** before disabling legacy services
 
 ## Contributing
 
 1. Fork the repository
 2. Create a feature branch
-3. Test with your Gmail configuration
-4. Ensure all documentation reflects Gmail usage
+3. Test with your configuration
+4. Update documentation as needed
 5. Submit a pull request
 
 ## Support
 
 - **Configuration**: Check `config_manager.py` for settings validation
 - **Email Issues**: Verify Gmail app password and SMTP settings
-- **AI Intelligence**: Monitor AI service logs for detection confidence
-- **Network**: Ensure connectivity to planes.hamm.me and API endpoints
+- **Twitter Issues**: See [TWITTER_SETUP.md](TWITTER_SETUP.md)
+- **Network**: Ensure connectivity to planes.hamm.me
+- **Documentation**: See [CLAUDE.md](CLAUDE.md) for developer guide
+
+## License
+
+This project is for educational and personal use. Users are responsible for complying with all applicable laws and regulations regarding aircraft tracking, privacy, and social media use.
 
 ---
 
-**Disclaimer**: This software is for educational purposes. Users are responsible for complying with all applicable laws and regulations regarding aircraft tracking and privacy.
+**Disclaimer**: This software is for educational purposes. Users are responsible for complying with all applicable laws and regulations regarding aircraft tracking, privacy, and social media terms of service. ADS-B data is publicly broadcast, but respect privacy by implementing appropriate delays and vague location reporting when sharing information publicly.
