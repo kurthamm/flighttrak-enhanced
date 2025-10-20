@@ -4,305 +4,201 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-FlightTrak is a unified real-time aircraft monitoring and alert system that tracks specific aircraft using ADS-B data, performs intelligent pattern analysis, and sends email notifications. The system has been refactored for efficiency and maintainability.
+FlightTrak is a simple, focused real-time aircraft monitoring system that tracks specific aircraft (celebrities, government, historic planes) using ADS-B data from dump1090 and sends rich email alerts when detected. The system emphasizes reliability and actionable notifications over complex analysis.
 
-## Refactored Architecture (2025)
+## Architecture
 
-The system now consists of these core modules:
+### Core Services (2 Services)
 
-### Core Services
-- **flight_monitor.py**: Unified monitoring service (replaces multiple fa*.py files)
-- **email_service.py**: Centralized Gmail SMTP email handling
-- **config_manager.py**: Unified configuration management
-- **utils.py**: Shared utility functions
+**1. flight_monitor.py** (flightalert.service) - Main tracking service
+- Polls planes.hamm.me (remote dump1090 via Cloudflare tunnel) every 15 seconds
+- Compares detected aircraft against aircraft_list.json (59 tracked aircraft)
+- Sends **enhanced HTML email alerts** with distance, tracking links, and flight details
+- Logs detections to detected_aircraft.txt
+- Optional emergency squawk detection (7500/7600/7700/7777)
+- 5-minute cooldown per aircraft to prevent spam
 
-### Intelligence Modules
-- **ai_intelligence_service.py**: AI-powered event detection and intelligence
-- **anomaly_detector.py**: Flight anomaly detection
-- **contextual_intelligence.py**: Context gathering from multiple sources
+**2. enhanced_dashboard.py** (flighttrak-dashboard.service) - Web dashboard
+- Flask web server on port 5030
+- Real-time aircraft display with Leaflet.js maps
+- API endpoints: /api/stats, /api/aircraft
+- Independent of flight_monitor.py
 
-### Dashboard and Web Interface
-- **enhanced_dashboard.py**: Flask web dashboard with real-time updates
-- **templates/enhanced_dashboard.html**: Interactive dashboard with maps and analytics
+### Core Modules
 
-### Data Management
-- **aircraft_list.json**: Tracked aircraft database
-- **config.json**: System configuration
-- **.env**: Environment variables (optional)
+**config_manager.py**: Configuration management
+- Loads config.json with environment variable overrides
+- Environment variables take precedence (EMAIL_SENDER, HOME_LAT, etc.)
+- Usage: `from config_manager import config`
+
+**email_service.py**: Email alerts via Gmail SMTP
+- send_aircraft_alert() - Enhanced HTML emails with distance and tracking links
+- send_anomaly_alert() - Emergency squawk code alerts
+- Uses Gmail SMTP with TLS (port 587), no API costs
+
+**anomaly_detector.py**: Emergency detection only
+- Simplified to detect emergency squawk codes only (7500/7600/7700/7777)
+- No complex pattern analysis
+- Critical severity alerts for genuine emergencies
+
+**utils.py**: Shared utilities
+- haversine_distance() for calculating distance from home
+- Log rotation
+- Aircraft data formatting
+
+## Data Flow
+
+1. **ADS-B Data Ingestion**: planes.hamm.me serves JSON from remote dump1090
+2. **Aircraft Matching**: flight_monitor.py compares detected ICAO codes against aircraft_list.json
+3. **Distance Calculation**: Uses haversine formula to calculate miles from home location
+4. **Alert Generation**: Two alert types with separate recipients:
+   - **Tracked aircraft alerts** - Rich HTML email when celebrity/government aircraft detected
+   - **Emergency alerts** - Critical alerts for squawk codes 7500/7600/7700/7777
+5. **Persistence**: detected_aircraft.txt logs all detections with timestamps
+
+## Key Integration Points
+
+### Adding New Aircraft to Track
+- Edit `aircraft_list.json` directly, OR
+- Import from Excel with `python merge_plane_data.py`
+- Services automatically reload on change (no restart needed)
+- ICAO codes must be uppercase (e.g., "A6F2B7" not "a6f2b7")
+
+### Configuration Hierarchy
+1. Environment variables (highest priority)
+2. config.json (fallback)
+3. Code defaults (lowest priority)
+
+Access via: `config.get('key.subkey')` or `config.get_home_coordinates()`
+
+### Email Alert Flow
+All alerts follow this pattern:
+```python
+from email_service import EmailService
+from config_manager import config
+
+email_service = EmailService(config.get_email_config())
+email_service.send_aircraft_alert(aircraft, tracked_info, distance, recipients)
+```
 
 ## Development Commands
 
 ```bash
-# Activate virtual environment
-source venv/bin/activate
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Run the unified flight monitor (recommended)
-python flight_monitor.py
-
-# Run the enhanced dashboard
-python enhanced_dashboard.py
-
-# Run AI intelligence service
-python ai_intelligence_service.py
-
-# Legacy commands (still work)
-python fa_enhanced_v2.py  # Legacy flight alert service
-python caf.py             # Aircraft validation
-python merge_plane_data.py # Merge Excel data
-```
-
-## Configuration
-
-### Unified Configuration (config.json)
-```json
-{
-  "home": {"lat": 34.1133171, "lon": -80.9024019},
-  "email_config": {
-    "smtp_server": "smtp.gmail.com",
-    "smtp_port": 587,
-    "sender": "kurt@hamm.me",
-    "password": "app_password",
-    "use_tls": true
-  },
-  "alert_config": {
-    "tracked_aircraft_alerts": {"enabled": true, "recipients": ["user@example.com"]},
-    "ai_intelligence_alerts": {"enabled": true, "recipients": ["user@example.com"]},
-    "anomaly_alerts": {"enabled": true, "recipients": ["user@example.com"]}
-  },
-  "intelligence_apis": {
-    "newsapi_key": "your_key",
-    "mapbox_token": "your_token",
-    "claude_api_key": "your_key"
-  }
-}
-```
-
-### Environment Variables (optional)
-```bash
-HOME_LAT=34.1133171
-HOME_LON=-80.9024019
-EMAIL_SENDER=kurt@hamm.me
-EMAIL_PASSWORD=app_password
-DASHBOARD_PORT=5030
-```
-
-## System Features
-
-### 1. Aircraft Tracking
-- Real-time monitoring of tracked aircraft
-- Distance calculations from home location
-- Rich HTML email alerts with tracking links
-- Detection logging to `detected_aircraft.txt`
-
-### 2. Anomaly Detection
-- Emergency squawk code detection (7500/7600/7700)
-- Rapid altitude/speed changes
-- Unusual flight patterns
-- Configurable severity levels
-
-### 3. AI Intelligence
-- Machine learning pattern recognition
-- Multi-source contextual analysis
-- Natural language event reporting
-- Confidence scoring and thresholds
-
-### 4. Web Dashboard
-- Real-time aircraft display
-- Interactive maps with Leaflet.js
-- Statistics and analytics
-- Mobile-responsive design
-- Available on port 5030
-
-### 5. Email System
-- Gmail SMTP (no more SendGrid costs)
-- HTML email templates
-- Multi-recipient support
-- Service notifications
-
-## Data Sources
-
-### Primary
-- **planes.hamm.me**: Remote dump1090 data via Cloudflare tunnel
-- **aircraft_list.json**: Tracked aircraft database
-
-### Intelligence Sources
-- NewsAPI for aviation news
-- Reddit aviation communities
-- Weather services
-- NOTAM feeds
-- MapBox for geographic data
-
-## File Structure
-
-```
-flighttrak/
-├── Core Services
-│   ├── flight_monitor.py      # Unified monitoring
-│   ├── email_service.py       # Email handling
-│   ├── config_manager.py      # Configuration
-│   └── utils.py               # Shared utilities
-├── Intelligence
-│   ├── ai_intelligence_service.py
-│   ├── ai_event_intelligence.py
-│   ├── anomaly_detector.py
-│   └── contextual_intelligence.py
-├── Dashboard
-│   ├── enhanced_dashboard.py
-│   └── templates/enhanced_dashboard.html
-├── Data
-│   ├── config.json
-│   ├── aircraft_list.json
-│   └── detected_aircraft.txt
-├── legacy/ (archived files)
-│   ├── fa.py                  # Original flight service
-│   ├── fa_enhanced.py         # Enhanced version  
-│   ├── fa_enhanced_v2.py      # Latest legacy
-│   ├── web_dashboard.py       # Original dashboard
-│   ├── dashboard.html         # Original template
-│   └── README.md              # Legacy documentation
-└── Utilities
-    ├── caf.py
-    ├── merge_plane_data.py
-    └── checkaf.py
-```
-
-## Installation and Setup
-
-```bash
-# 1. Clone and setup
-cd /root/flighttrak
-python -m venv venv
+# Virtual environment
 source venv/bin/activate
 pip install -r requirements.txt
 
-# 2. Configure
-cp config.example.json config.json
-# Edit config.json with your settings
+# Run services (development)
+python flight_monitor.py              # Main tracking service
+python enhanced_dashboard.py          # Dashboard on port 5030
 
-# 3. Run services
-# Option A: Unified monitor (recommended)
-python flight_monitor.py
+# Run services (production via systemd)
+sudo systemctl start flightalert.service
+sudo systemctl start flighttrak-dashboard.service
+sudo systemctl status flightalert.service
 
-# Option B: Separate services
-python enhanced_dashboard.py &
-python ai_intelligence_service.py &
+# Restart after code changes
+sudo systemctl restart flightalert.service
 
-# 4. Access dashboard
-# Open http://your-server:5030
+# View logs
+tail -f flighttrak_monitor.log        # Main service logs
+tail -f detected_aircraft.txt         # Detection history
+tail -f dashboard.log                 # Dashboard logs
+
+# Utilities
+python caf.py                         # Validate aircraft with FlightAware API
+python merge_plane_data.py            # Import from Excel
+python test_email.py                  # Test Gmail SMTP configuration
 ```
 
-## Common Tasks
-
-### Adding Aircraft
-1. Edit `aircraft_list.json` directly
-2. Or use Excel file and run `python merge_plane_data.py`
-3. Service will reload automatically
-
-### Troubleshooting
-```bash
-# Check logs
-tail -f flighttrak_monitor.log
-tail -f flightalert.log
-
-# Test email
-python -c "from email_service import EmailService; from config_manager import config; EmailService(config.get_email_config()).send_email('test@example.com', 'Test', '<h1>Test</h1>')"
-
-# Check configuration
-python -c "from config_manager import config; print(config.get('home'))"
-```
-
-### Service Management
-```bash
-# SystemD services
-sudo systemctl status flighttrak-dashboard.service
-sudo systemctl status flighttrak-ai-intelligence.service
-
-# Manual restart
-sudo systemctl restart flighttrak-dashboard.service
-```
-
-## API Endpoints
-
-### Dashboard API
-- `GET /api/stats` - System statistics
-- `GET /api/aircraft` - Current aircraft data
-- `GET /api/ai-intelligence` - AI system status
-
-## Security Notes
-
-1. **Email**: Now uses Gmail SMTP with app passwords
-2. **API Keys**: Store in environment variables when possible
-3. **Logs**: Automatic rotation to prevent disk fill
-4. **Access**: Dashboard should be behind reverse proxy in production
-
-## Performance Optimizations
-
-1. **Unified Services**: Reduced memory footprint
-2. **Efficient Polling**: Configurable check intervals
-3. **Caching**: Aircraft data caching
-4. **Database**: SQLite for persistent storage
-5. **Async Operations**: Non-blocking email sending
-
-## Migration from Legacy
-
-If migrating from old fa.py system:
-1. Update configuration to new format
-2. Switch from SendGrid to Gmail SMTP
-3. Use `flight_monitor.py` instead of `fa_enhanced_v2.py`
-4. Update systemd services to new entry points
-
-## Development
+## Testing
 
 ```bash
-# Code formatting
-black *.py
-
-# Linting  
-flake8 *.py
-
-# Testing
-pytest tests/
-
-# Dependencies
-pip install -r requirements.txt
-```
-
-## Refactoring Summary (2025)
-
-### What Was Improved
-1. **Eliminated Redundancy**: Consolidated multiple email functions into `email_service.py`
-2. **Unified Configuration**: Single `config_manager.py` handles all settings
-3. **Shared Utilities**: Common functions moved to `utils.py`
-4. **Service Consolidation**: `flight_monitor.py` replaces multiple monitoring scripts
-5. **Cost Reduction**: Switched from SendGrid API to Gmail SMTP
-6. **Better Error Handling**: Centralized logging and error management
-7. **Performance**: Reduced memory usage and improved efficiency
-
-### Legacy Files (Kept for Compatibility)
-- `fa.py`, `fa_enhanced.py`, `fa_enhanced_v2.py`: Original flight alert services
-- `web_dashboard.py`: Original dashboard (enhanced version recommended)
-- Individual utility scripts still work but use refactored core modules
-
-### Testing Commands
-```bash
-# Test unified monitor
-python flight_monitor.py
-
-# Test email service
+# Test email configuration
 python -c "
 from email_service import EmailService
 from config_manager import config
 service = EmailService(config.get_email_config())
-print('Email service initialized successfully')
+print('Gmail SMTP configured successfully')
 "
 
-# Test configuration
+# Test configuration loading
 python -c "
 from config_manager import config
 print(f'Home: {config.get_home_coordinates()}')
-print(f'Alerts enabled: {config.is_alert_enabled(\"tracked_aircraft\")}')
+print(f'Tracked aircraft: 59')
 "
+
+# Test data source connectivity
+curl https://planes.hamm.me/data/aircraft.json | python3 -c "import sys,json; d=json.load(sys.stdin); print(f'Aircraft visible: {len(d.get(\"aircraft\",[]))}')"
+
+# Watch for detections in real-time
+tail -f detected_aircraft.txt
 ```
+
+## Important Implementation Details
+
+### Alert Deduplication
+- flight_monitor.py uses `recent_alerts` set with 5-minute cooldown
+- Prevents spam from aircraft circling near home location
+- Same aircraft won't trigger multiple alerts within 5 minutes
+
+### Enhanced Email Alerts
+- **Distance prominently displayed**: "24.5 miles from home" in large text
+- **Multiple tracking links**: FlightAware, ADS-B Exchange, Flightradar24
+- **Google Maps link**: View current aircraft location
+- **Flight details**: Heading (with compass direction), vertical rate, altitude, speed
+- **Aircraft information**: Owner, model, registration, ICAO hex, description
+- **Rich formatting**: Separate sections for aircraft info and flight status
+
+### Emergency Squawk Detection
+- Emergency codes: 7500 (hijack), 7600 (radio failure), 7700 (emergency), 7777 (military intercept)
+- Triggers immediate CRITICAL alerts
+- Simplified from complex anomaly analysis to just squawk code checking
+
+### Dashboard Architecture
+- Flask app with Jinja2 templates
+- JavaScript polls /api/aircraft every 5 seconds
+- Leaflet.js for interactive maps
+- No database; reads aircraft.json directly from planes.hamm.me
+- Available at http://server:5030
+
+## Common Pitfalls
+
+1. **Gmail App Passwords**: Requires 2FA enabled on Gmail account. Regular password won't work.
+2. **planes.hamm.me**: If unreachable, service logs errors but continues. Check Cloudflare tunnel status.
+3. **JSON Formatting**: aircraft_list.json must be valid JSON. Use `python -m json.tool aircraft_list.json` to validate.
+4. **ICAO Codes**: Must be uppercase in aircraft_list.json (e.g., "A6F2B7" not "a6f2b7")
+5. **Service Path**: Services expect to run from /home/kurt/flighttrak (systemd WorkingDirectory)
+6. **Distance Units**: All distances in miles, altitudes in feet, speeds in knots (aviation standard)
+
+## Tracked Aircraft Examples
+
+The system tracks 59 aircraft including:
+- **Taylor Swift** (N621MM) - Dassault Falcon 7X - "Primary private jet - Heavily tracked"
+- **Elon Musk** (N628TS, N272BG) - Gulfstream G650ER and G550
+- **Air Force One** (ADFDF8, ADFDF9) - VC-25A Boeing 747s
+- **Jeff Bezos** (N11AF) - Gulfstream G700 - "$80M flagship delivered July 2024"
+- **Drake** (N767CJ) - Boeing 767-200ER - "Air Drake - $200M with bedroom and casino"
+- **Donald Trump** (N757AF) - Boeing 757-200 - "Trump Force One"
+- **B-29 FIFI** (N529B) - One of only two flying B-29s worldwide
+
+See aircraft_list.json for the complete list.
+
+## System Evolution
+
+**October 2025 Refactoring**: Simplified from over-engineered AI system to focused tracking
+- ✅ Removed AI event intelligence (DBSCAN clustering, ML pattern matching)
+- ✅ Removed contextual intelligence integration (news, weather correlation)
+- ✅ Disabled ai_intelligence_service.py (flighttrak-ai-intelligence.service)
+- ✅ Simplified anomaly detection to emergency squawks only
+- ✅ Enhanced email alerts with distance, tracking links, and rich flight details
+- ✅ Migrated from SendGrid API to Gmail SMTP (no per-email costs)
+- ✅ Fixed data type errors in anomaly detector
+- ✅ Updated aircraft database with enhanced descriptions
+
+**Previous Migration (2025)**: SendGrid to Gmail SMTP
+- Old code used `sendgrid` Python library
+- New code uses stdlib `smtplib` with TLS
+- No per-email costs with Gmail
+- Environment variable changed: SENDGRID_API_KEY → EMAIL_PASSWORD

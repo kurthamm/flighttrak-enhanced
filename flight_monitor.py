@@ -37,18 +37,11 @@ except ImportError:
     logging.warning("Anomaly detection not available")
 
 try:
-    from ai_event_intelligence import AIEventDetector
-    AI_INTELLIGENCE_AVAILABLE = True
+    from twitter_poster import TwitterPoster
+    TWITTER_AVAILABLE = True
 except ImportError:
-    AI_INTELLIGENCE_AVAILABLE = False
-    logging.warning("AI intelligence not available")
-
-try:
-    from contextual_intelligence import ContextualIntelligence
-    CONTEXTUAL_INTELLIGENCE_AVAILABLE = True
-except ImportError:
-    CONTEXTUAL_INTELLIGENCE_AVAILABLE = False
-    logging.warning("Contextual intelligence not available")
+    TWITTER_AVAILABLE = False
+    logging.warning("Twitter posting not available")
 
 
 class FlightMonitor:
@@ -84,34 +77,32 @@ class FlightMonitor:
         self.recent_alerts = set()
         self.alert_cooldown = 300  # 5 minutes
         
+        # Anomaly alert rate limiting
+        self.anomaly_alert_times = defaultdict(float)  # Track last alert time per aircraft/type
+        self.anomaly_cooldown = 3600  # 1 hour cooldown for same anomaly type per aircraft
+        self.max_anomaly_alerts_per_hour = 5  # Max alerts per aircraft per hour
+        self.anomaly_alert_counts = defaultdict(lambda: defaultdict(int))  # Count per aircraft per hour
+        
         # Load aircraft list
         self._load_aircraft_list()
-        
+
         # Initialize optional modules
         self.anomaly_detector = None
-        self.ai_detector = None
-        self.contextual_intel = None
-        
+        self.twitter_poster = None
+
         if ANOMALY_DETECTION_AVAILABLE and config.is_alert_enabled('anomaly'):
             try:
                 self.anomaly_detector = FlightAnomalyDetector(self.home_lat, self.home_lon)
-                logging.info("Anomaly detector initialized")
+                logging.info("Anomaly detector initialized (emergency squawks only)")
             except Exception as e:
                 logging.error(f"Failed to initialize anomaly detector: {e}")
-        
-        if AI_INTELLIGENCE_AVAILABLE and config.is_alert_enabled('ai_intelligence'):
+
+        if TWITTER_AVAILABLE:
             try:
-                self.ai_detector = AIEventDetector(self.home_lat, self.home_lon, config._config)
-                logging.info("AI event detector initialized")
+                self.twitter_poster = TwitterPoster()
+                logging.info("Twitter poster initialized")
             except Exception as e:
-                logging.error(f"Failed to initialize AI detector: {e}")
-        
-        if CONTEXTUAL_INTELLIGENCE_AVAILABLE:
-            try:
-                self.contextual_intel = ContextualIntelligence(self.home_lat, self.home_lon)
-                logging.info("Contextual intelligence initialized")
-            except Exception as e:
-                logging.error(f"Failed to initialize contextual intelligence: {e}")
+                logging.error(f"Failed to initialize Twitter poster: {e}")
         
         # Signal handlers
         signal.signal(signal.SIGINT, self._signal_handler)
@@ -179,21 +170,25 @@ class FlightMonitor:
                 # Send alert
                 tracked_info = self.tracked_aircraft[icao]
                 recipients = config.get_alert_recipients('tracked_aircraft')
-                
+
                 if recipients:
+                    # Send email alert
                     success = self.email_service.send_aircraft_alert(
                         aircraft, tracked_info, distance, recipients
                     )
-                    
+
                     if success:
                         self.recent_alerts.add(alert_key)
                         self.detected_aircraft.add(icao)
-                        
+
                         # Log detection
                         self._log_aircraft_detection(aircraft, tracked_info, distance)
-                        
-                        logging.info(f"Tracked aircraft alert sent: {icao} "
-                                   f"({tracked_info.get('description', 'Unknown')})")
+
+                        logging.info(f"Tracked aircraft alert sent: {icao} ({tracked_info.get('description', 'Unknown')}) at {distance:.1f} miles")
+
+                        # Queue for Twitter posting (if enabled)
+                        if self.twitter_poster:
+                            self.twitter_poster.queue_post(aircraft, tracked_info, distance)
     
     def _check_anomalies(self, aircraft_list: List[Dict]) -> None:
         """Check for aircraft anomalies"""
@@ -213,60 +208,40 @@ class FlightMonitor:
                     if alert_key in self.recent_alerts:
                         continue
                     
+                    # Rate limiting checks
+                    current_time = time.time()
+                    current_hour = int(current_time // 3600)
+                    
+                    # Check cooldown for specific anomaly type
+                    last_alert_time = self.anomaly_alert_times[alert_key]
+                    if current_time - last_alert_time < self.anomaly_cooldown:
+                        logging.debug(f"Anomaly alert rate limited (cooldown): {icao} - {anomaly_type}")
+                        continue
+                    
+                    # Check hourly limit per aircraft
+                    if self.anomaly_alert_counts[icao][current_hour] >= self.max_anomaly_alerts_per_hour:
+                        logging.debug(f"Anomaly alert rate limited (hourly max): {icao}")
+                        continue
+                    
+                    # Skip LOW severity anomalies if we've had recent alerts for this aircraft
+                    if anomaly.get('severity') == 'LOW' and self.anomaly_alert_counts[icao][current_hour] > 2:
+                        logging.debug(f"Skipping LOW severity anomaly due to recent alerts: {icao} - {anomaly_type}")
+                        continue
+                    
                     # Send alert
                     recipients = config.get_alert_recipients('anomaly')
                     if recipients:
+                        # Send anomaly email alert
                         success = self.email_service.send_anomaly_alert(anomaly, recipients)
-                        
+
                         if success:
                             self.recent_alerts.add(alert_key)
-                            logging.info(f"Anomaly alert sent: {icao} - {anomaly_type}")
+                            self.anomaly_alert_times[alert_key] = current_time
+                            self.anomaly_alert_counts[icao][current_hour] += 1
+                            logging.info(f"Anomaly alert sent: {icao} - {anomaly_type} ({anomaly.get('severity', 'UNKNOWN')})")
                             
             except Exception as e:
                 logging.error(f"Error checking anomalies for {aircraft.get('hex', 'unknown')}: {e}")
-    
-    def _check_ai_intelligence(self, aircraft_list: List[Dict]) -> None:
-        """Check for AI intelligence events"""
-        if not self.ai_detector or not config.is_alert_enabled('ai_intelligence'):
-            return
-        
-        try:
-            events = self.ai_detector.analyze_aircraft_data(aircraft_list)
-            
-            for event in events:
-                # Check confidence threshold
-                min_confidence = config.get('alerts.ai_intelligence.min_confidence', 0.6)
-                if event.confidence < min_confidence:
-                    continue
-                
-                # Check for duplicates
-                if self.ai_detector.is_duplicate_event(event):
-                    continue
-                
-                # Store event
-                self.ai_detector.store_event_intelligence(event)
-                
-                # Send alert
-                recipients = config.get_alert_recipients('ai_intelligence')
-                if recipients:
-                    event_data = {
-                        'event_type': event.event_type,
-                        'confidence': event.confidence,
-                        'severity': event.severity,
-                        'description': event.narrative,
-                        'aircraft_involved': event.aircraft_involved,
-                        'location': event.location,
-                        'timestamp': event.timestamp
-                    }
-                    
-                    success = self.email_service.send_ai_intelligence_alert(event_data, recipients)
-                    
-                    if success:
-                        logging.info(f"AI intelligence alert sent: {event.event_type} "
-                                   f"({event.confidence:.1%} confidence)")
-                        
-        except Exception as e:
-            logging.error(f"Error in AI intelligence analysis: {e}")
     
     def _update_aircraft_stats(self, aircraft_list: List[Dict]) -> None:
         """Update aircraft statistics for pattern analysis"""
@@ -354,9 +329,7 @@ class FlightMonitor:
                 'detected_today': len(self.detected_aircraft),
                 'active_patterns': len(self.aircraft_stats),
                 'modules_active': {
-                    'anomaly_detection': self.anomaly_detector is not None,
-                    'ai_intelligence': self.ai_detector is not None,
-                    'contextual_intel': self.contextual_intel is not None
+                    'anomaly_detection': self.anomaly_detector is not None
                 }
             }
             
@@ -386,20 +359,22 @@ class FlightMonitor:
                     
                     # Check for tracked aircraft
                     self._check_tracked_aircraft(aircraft_list)
-                    
+
                     # Check for anomalies
                     self._check_anomalies(aircraft_list)
-                    
-                    # Check AI intelligence
-                    self._check_ai_intelligence(aircraft_list)
-                    
+
+                    # Process Twitter posting queue (for delayed posts)
+                    if self.twitter_poster:
+                        self.twitter_poster.process_queue()
+
                     # Clean up old alerts periodically
                     self._cleanup_old_alerts()
                 
-                # Send alive notification
+                # Send alive notification (disabled temporarily)
                 current_time = time.time()
                 if current_time - last_alive > alive_interval:
-                    self._send_alive_notification()
+                    # self._send_alive_notification()  # Disabled
+                    logging.info("Alive notification skipped (disabled)")
                     last_alive = current_time
                 
                 # Rotate log files if needed
@@ -413,20 +388,6 @@ class FlightMonitor:
                 logging.error(f"Error in monitoring loop: {e}")
                 if self.running:
                     time.sleep(30)  # Wait longer on error
-    
-    def _contextual_intelligence_loop(self) -> None:
-        """Run contextual intelligence gathering"""
-        if not self.contextual_intel:
-            return
-        
-        while self.running:
-            try:
-                self.contextual_intel.continuous_context_gathering(interval=300)
-                time.sleep(60)  # Check every minute
-                
-            except Exception as e:
-                logging.error(f"Error in contextual intelligence: {e}")
-                time.sleep(60)
     
     def start(self) -> None:
         """Start the monitoring service"""
@@ -447,13 +408,7 @@ class FlightMonitor:
         monitor_thread = threading.Thread(target=self._monitoring_loop, daemon=True)
         monitor_thread.start()
         self.threads.append(monitor_thread)
-        
-        # Start contextual intelligence thread
-        if self.contextual_intel:
-            context_thread = threading.Thread(target=self._contextual_intelligence_loop, daemon=True)
-            context_thread.start()
-            self.threads.append(context_thread)
-        
+
         logging.info("FlightTrak Monitor started")
         
         # Main thread loop

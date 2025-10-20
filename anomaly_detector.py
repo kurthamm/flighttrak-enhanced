@@ -58,6 +58,9 @@ class FlightAnomalyDetector:
             'formation_distance': 2,        # Miles for formation flying
             'emergency_altitude': 500,      # Emergency low altitude (ft)
             'suspicious_loiter_time': 1800, # 30 minutes loitering
+            'min_transponder_gap': 120,     # Minimum gap to flag transponder issue (seconds)
+            'altitude_variance_threshold': 5000000,  # Much higher threshold for erratic altitude
+            'min_squawk_changes': 5,        # Minimum squawk changes to flag
         }
 
     def haversine_miles(self, lat1, lon1, lat2, lon2):
@@ -79,32 +82,15 @@ class FlightAnomalyDetector:
         return (math.degrees(bearing) + 360) % 360
 
     def analyze_aircraft(self, aircraft_data):
-        """Main analysis function - returns list of anomalies detected"""
+        """Main analysis function - returns list of anomalies detected (emergency squawks only)"""
         anomalies = []
         hex_code = aircraft_data.get('hex', '')
         if not hex_code:
             return anomalies
 
-        history = self.aircraft_history[hex_code]
-        current_time = time.time()
-        
-        # Update tracking data
-        self._update_aircraft_history(aircraft_data, history, current_time)
-        
-        # Run all anomaly detection algorithms
-        anomalies.extend(self._detect_emergency_patterns(aircraft_data, history))
-        anomalies.extend(self._detect_unusual_flight_behavior(aircraft_data, history))
-        anomalies.extend(self._detect_suspicious_patterns(aircraft_data, history))
-        anomalies.extend(self._detect_aviation_safety_issues(aircraft_data, history))
-        anomalies.extend(self._detect_weird_interesting_patterns(aircraft_data, history))
-        anomalies.extend(self._detect_formation_flying(aircraft_data))
-        anomalies.extend(self._detect_restricted_area_violations(aircraft_data))
-        
-        # Update behavior score
-        if anomalies:
-            history['anomaly_count'] += len(anomalies)
-            history['behavior_score'] = min(100, history['behavior_score'] + len(anomalies) * 5)
-        
+        # Only check for emergency squawk codes (simplified)
+        anomalies.extend(self._detect_emergency_squawks(aircraft_data))
+
         return anomalies
 
     def _update_aircraft_history(self, aircraft, history, current_time):
@@ -123,65 +109,46 @@ class FlightAnomalyDetector:
             }
             history['positions'].append(position)
 
-        # Track other parameters
-        if aircraft.get('alt_baro'):
-            history['altitudes'].append(aircraft['alt_baro'])
-        if aircraft.get('gs'):
-            history['speeds'].append(aircraft['gs'])
-        if aircraft.get('track'):
-            history['headings'].append(aircraft['track'])
-        if aircraft.get('baro_rate'):
-            history['vertical_rates'].append(aircraft['baro_rate'])
+        # Track other parameters (only numeric values)
+        alt_baro = aircraft.get('alt_baro')
+        if alt_baro and isinstance(alt_baro, (int, float)):
+            history['altitudes'].append(alt_baro)
+
+        gs = aircraft.get('gs')
+        if gs and isinstance(gs, (int, float)):
+            history['speeds'].append(gs)
+
+        track = aircraft.get('track')
+        if track and isinstance(track, (int, float)):
+            history['headings'].append(track)
+
+        baro_rate = aircraft.get('baro_rate')
+        if baro_rate and isinstance(baro_rate, (int, float)):
+            history['vertical_rates'].append(baro_rate)
         if aircraft.get('flight'):
             history['callsigns'].add(aircraft['flight'].strip())
         if aircraft.get('squawk'):
             history['squawks'].add(aircraft['squawk'])
 
-    def _detect_emergency_patterns(self, aircraft, history):
-        """Detect emergency situations"""
+    def _detect_emergency_squawks(self, aircraft):
+        """Detect emergency squawk codes only"""
         anomalies = []
-        
+
         # Emergency squawk codes
         squawk = aircraft.get('squawk')
         if squawk:
             emergency_codes = {
-                '7500': 'HIJACK ALERT',
-                '7600': 'RADIO FAILURE', 
-                '7700': 'GENERAL EMERGENCY',
-                '7777': 'MILITARY INTERCEPT'
+                '7500': 'HIJACK ALERT - Aircraft has been hijacked',
+                '7600': 'RADIO FAILURE - Lost radio contact with ATC',
+                '7700': 'GENERAL EMERGENCY - Aircraft declaring emergency',
+                '7777': 'MILITARY INTERCEPT - Military interception in progress'
             }
             if squawk in emergency_codes:
                 anomalies.append({
-                    'type': 'EMERGENCY',
+                    'type': 'EMERGENCY_SQUAWK',
                     'severity': 'CRITICAL',
-                    'description': f'{emergency_codes[squawk]} - Squawking {squawk}',
-                    'aircraft': aircraft,
-                    'timestamp': time.time()
-                })
-
-        # Rapid altitude loss (possible emergency descent)
-        if len(history['altitudes']) >= 5:
-            recent_alts = list(history['altitudes'])[-5:]
-            alt_change = recent_alts[0] - recent_alts[-1]
-            if alt_change > 8000:  # Lost 8000+ feet recently
-                anomalies.append({
-                    'type': 'EMERGENCY_DESCENT',
-                    'severity': 'HIGH',
-                    'description': f'Rapid altitude loss: {alt_change:.0f} feet',
-                    'aircraft': aircraft,
-                    'timestamp': time.time()
-                })
-
-        # Emergency altitude (very low)
-        altitude = aircraft.get('alt_baro', 0)
-        if altitude > 0 and altitude < self.thresholds['emergency_altitude']:
-            # Check if near airport
-            near_airport = self._is_near_airport(aircraft.get('lat'), aircraft.get('lon'))
-            if not near_airport:
-                anomalies.append({
-                    'type': 'LOW_ALTITUDE',
-                    'severity': 'HIGH',
-                    'description': f'Extremely low altitude: {altitude} ft (not near airport)',
+                    'description': emergency_codes[squawk],
+                    'squawk_code': squawk,
                     'aircraft': aircraft,
                     'timestamp': time.time()
                 })
@@ -217,16 +184,21 @@ class FlightAnomalyDetector:
 
         # Erratic altitude changes
         if len(history['altitudes']) >= 10:
-            alts = list(history['altitudes'])
-            alt_variance = np.var(alts) if len(alts) > 1 else 0
-            if alt_variance > 1000000:  # High altitude variance
-                anomalies.append({
-                    'type': 'ERRATIC_ALTITUDE',
-                    'severity': 'MEDIUM',
-                    'description': f'Erratic altitude changes detected (variance: {alt_variance:.0f})',
-                    'aircraft': aircraft,
-                    'timestamp': time.time()
-                })
+            # Filter to ensure only numeric values (extra safety check)
+            alts = [a for a in history['altitudes'] if isinstance(a, (int, float))]
+            if len(alts) > 1:
+                try:
+                    alt_variance = np.var(alts)
+                    if alt_variance > self.thresholds['altitude_variance_threshold']:  # Much higher threshold
+                        anomalies.append({
+                            'type': 'ERRATIC_ALTITUDE',
+                            'severity': 'MEDIUM',
+                            'description': f'Erratic altitude changes detected (variance: {alt_variance:.0f})',
+                            'aircraft': aircraft,
+                            'timestamp': time.time()
+                        })
+                except Exception as e:
+                    logging.debug(f"Error calculating altitude variance: {e}")
 
         # Multiple callsign changes (possible identity spoofing)
         if len(history['callsigns']) > 3:
@@ -296,7 +268,7 @@ class FlightAnomalyDetector:
         # Transponder malfunction detection
         messages = aircraft.get('messages', 0)
         seen = aircraft.get('seen', 0)
-        if messages > 0 and seen > 30:  # No updates for 30+ seconds
+        if messages > 0 and seen > self.thresholds['min_transponder_gap']:  # Higher threshold
             anomalies.append({
                 'type': 'TRANSPONDER_ISSUE',
                 'severity': 'MEDIUM',
@@ -306,7 +278,7 @@ class FlightAnomalyDetector:
             })
 
         # Unusual squawk code changes
-        if len(history['squawks']) > 2:
+        if len(history['squawks']) >= self.thresholds['min_squawk_changes']:
             anomalies.append({
                 'type': 'MULTIPLE_SQUAWKS',
                 'severity': 'LOW',
@@ -372,24 +344,37 @@ class FlightAnomalyDetector:
         # Backwards flying (could indicate aerobatics or emergency)
         if aircraft.get('gs', 0) > 50:  # Has significant speed
             track = aircraft.get('track')
-            if track is not None and len(history['positions']) >= 2:
-                recent_positions = list(history['positions'])[-2:]
-                calculated_bearing = self.calculate_bearing(
-                    recent_positions[0]['lat'], recent_positions[0]['lon'],
-                    recent_positions[1]['lat'], recent_positions[1]['lon']
-                )
-                bearing_diff = abs(track - calculated_bearing)
-                if bearing_diff > 180:
-                    bearing_diff = 360 - bearing_diff
-                
-                if bearing_diff > 90:  # Flying sideways/backwards
-                    anomalies.append({
-                        'type': 'UNUSUAL_ORIENTATION',
-                        'severity': 'LOW',
-                        'description': f'Aircraft orientation unusual (track: {track}°, actual: {calculated_bearing:.0f}°)',
-                        'aircraft': aircraft,
-                        'timestamp': time.time()
-                    })
+            if track is not None and len(history['positions']) >= 5:
+                # Use positions further apart for better bearing calculation
+                recent_positions = list(history['positions'])
+                if len(recent_positions) >= 5:
+                    # Compare positions 5 updates apart for more accurate bearing
+                    pos1 = recent_positions[-5]
+                    pos2 = recent_positions[-1]
+                    
+                    # Only check if positions are sufficiently different
+                    distance = self.haversine_miles(
+                        pos1['lat'], pos1['lon'],
+                        pos2['lat'], pos2['lon']
+                    )
+                    
+                    if distance > 0.5:  # At least 0.5 miles between positions
+                        calculated_bearing = self.calculate_bearing(
+                            pos1['lat'], pos1['lon'],
+                            pos2['lat'], pos2['lon']
+                        )
+                        bearing_diff = abs(track - calculated_bearing)
+                        if bearing_diff > 180:
+                            bearing_diff = 360 - bearing_diff
+                        
+                        if bearing_diff > 120:  # More lenient threshold
+                            anomalies.append({
+                                'type': 'UNUSUAL_ORIENTATION',
+                                'severity': 'LOW',
+                                'description': f'Aircraft orientation unusual (track: {track}°, actual: {calculated_bearing:.0f}°)',
+                                'aircraft': aircraft,
+                                'timestamp': time.time()
+                            })
 
         return anomalies
 

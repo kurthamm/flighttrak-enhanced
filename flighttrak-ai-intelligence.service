@@ -6,19 +6,19 @@ After=network-online.target
 
 [Service]
 Type=simple
-User=root
-Group=root
-WorkingDirectory=/root/flighttrak
-Environment="PATH=/root/flighttrak/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-Environment="PYTHONPATH=/root/flighttrak"
+User=kurt
+Group=kurt
+WorkingDirectory=/home/kurt/flighttrak
+Environment="PATH=/home/kurt/flighttrak/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+Environment="PYTHONPATH=/home/kurt/flighttrak"
 
 # Main AI Intelligence Service
-ExecStart=/usr/bin/python3 /root/flighttrak/ai_intelligence_service.py
+ExecStart=/home/kurt/flighttrak/venv/bin/python3 /home/kurt/flighttrak/ai_intelligence_service.py
 
 # Service management
 ExecStartPre=/bin/sleep 5
-ExecReload=/root/flighttrak/venv/bin/python3 /root/flighttrak/send_service_notification.py reload
-ExecStopPost=/root/flighttrak/venv/bin/python3 -c "import logging; logging.basicConfig(filename='/root/flighttrak/ai_intelligence_service.log', level=logging.INFO); logging.info('AI Intelligence Service stopped')"
+ExecReload=/home/kurt/flighttrak/venv/bin/python3 /home/kurt/flighttrak/send_service_notification.py reload
+ExecStopPost=/home/kurt/flighttrak/venv/bin/python3 -c "import logging; logging.basicConfig(filename='/home/kurt/flighttrak/ai_intelligence_service.log', level=logging.INFO); logging.info('AI Intelligence Service stopped')"
 
 # Restart configuration
 Restart=always
@@ -27,8 +27,8 @@ StartLimitInterval=300
 StartLimitBurst=5
 
 # Logging
-StandardOutput=append:/root/flighttrak/ai_intelligence_service.log
-StandardError=append:/root/flighttrak/ai_intelligence_service.log
+StandardOutput=append:/home/kurt/flighttrak/ai_intelligence_service.log
+StandardError=append:/home/kurt/flighttrak/ai_intelligence_service.log
 
 # Resource limits
 MemoryLimit=1G
@@ -38,7 +38,7 @@ CPUQuota=200%
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
-ReadWritePaths=/root/flighttrak
+ReadWritePaths=/home/kurt/flighttrak
 
 [Install]
 WantedBy=multi-user.target

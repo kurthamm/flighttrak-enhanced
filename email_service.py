@@ -128,41 +128,91 @@ class EmailService:
     
     def _generate_aircraft_alert_html(self, aircraft: Dict, tracked_info: Dict, distance: float) -> str:
         """Generate HTML for aircraft alert"""
+        # Get additional flight data
+        icao = aircraft.get('hex', '').upper()
+        tail = tracked_info.get('tail_number', 'N/A')
+        lat = aircraft.get('lat', 0)
+        lon = aircraft.get('lon', 0)
+        heading = aircraft.get('track', 'N/A')
+        vert_rate = aircraft.get('baro_rate', 0)
+
+        # Calculate heading direction
+        if isinstance(heading, (int, float)):
+            directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW']
+            heading_text = f"{heading}° ({directions[int((heading + 22.5) % 360 / 45)]})"
+        else:
+            heading_text = 'N/A'
+
+        # Vertical rate text
+        if isinstance(vert_rate, (int, float)) and vert_rate != 0:
+            vert_text = f"{'Climbing' if vert_rate > 0 else 'Descending'} at {abs(vert_rate):,} ft/min"
+        else:
+            vert_text = "Level flight"
+
+        # Description with fallback
+        description = tracked_info.get('description', tracked_info.get('owner', 'Tracked Aircraft'))
+
         return f"""
-        <html><body style='font-family:Arial,sans-serif;line-height:1.4;background:#f4f4f4;color:#333;padding:20px;'>
-            <div style='max-width:700px;margin:0 auto;background:white;padding:25px;border-radius:10px;box-shadow:0 2px 10px rgba(0,0,0,0.1);'>
-                
-                <div style='text-align:center;margin-bottom:25px;padding-bottom:15px;border-bottom:2px solid #4CAF50;'>
-                    <h1 style='color:#4CAF50;margin:0;font-size:24px;'>✈️ FlightTrak Aircraft Alert</h1>
-                    <h2 style='color:#333;margin:10px 0;font-size:18px;'>{tracked_info.get('description', 'Tracked Aircraft')} Detected</h2>
+        <html><body style='font-family:Arial,sans-serif;line-height:1.6;background:#f4f4f4;color:#333;padding:20px;'>
+            <div style='max-width:750px;margin:0 auto;background:white;padding:30px;border-radius:12px;box-shadow:0 4px 15px rgba(0,0,0,0.15);'>
+
+                <div style='text-align:center;margin-bottom:30px;padding-bottom:20px;border-bottom:3px solid #4CAF50;'>
+                    <h1 style='color:#4CAF50;margin:0;font-size:28px;'>✈️ FlightTrak Detection</h1>
+                    <h2 style='color:#333;margin:15px 0;font-size:20px;'>{description}</h2>
+                    <p style='color:#666;font-size:16px;margin:10px 0;'><strong style='font-size:24px;color:#4CAF50;'>{distance:.1f} miles</strong> from home</p>
                 </div>
-                
-                <div style='background:#f9f9f9;padding:20px;border-radius:8px;margin:15px 0;'>
-                    <h3 style='color:#4CAF50;margin:0 0 15px 0;'>Aircraft Details</h3>
+
+                <div style='background:#f9f9f9;padding:25px;border-radius:8px;margin:20px 0;'>
+                    <h3 style='color:#4CAF50;margin:0 0 20px 0;border-bottom:2px solid #e0e0e0;padding-bottom:10px;'>Aircraft Information</h3>
                     <table style='width:100%;border-collapse:collapse;'>
-                        <tr><td style='padding:5px;font-weight:bold;'>ICAO:</td><td style='padding:5px;'>{aircraft.get('hex', 'N/A').upper()}</td></tr>
-                        <tr><td style='padding:5px;font-weight:bold;'>Registration:</td><td style='padding:5px;'>{tracked_info.get('tail_number', 'N/A')}</td></tr>
-                        <tr><td style='padding:5px;font-weight:bold;'>Aircraft:</td><td style='padding:5px;'>{tracked_info.get('model', 'N/A')}</td></tr>
-                        <tr><td style='padding:5px;font-weight:bold;'>Owner:</td><td style='padding:5px;'>{tracked_info.get('owner', 'N/A')}</td></tr>
-                        <tr><td style='padding:5px;font-weight:bold;'>Flight:</td><td style='padding:5px;'>{aircraft.get('flight', 'N/A')}</td></tr>
-                        <tr><td style='padding:5px;font-weight:bold;'>Altitude:</td><td style='padding:5px;'>{aircraft.get('alt_baro', 'N/A')} ft</td></tr>
-                        <tr><td style='padding:5px;font-weight:bold;'>Speed:</td><td style='padding:5px;'>{aircraft.get('gs', 'N/A')} kt</td></tr>
-                        <tr><td style='padding:5px;font-weight:bold;'>Distance:</td><td style='padding:5px;'>{distance:.1f} miles from home</td></tr>
-                        <tr><td style='padding:5px;font-weight:bold;'>Squawk:</td><td style='padding:5px;'>{aircraft.get('squawk', 'N/A')}</td></tr>
+                        <tr><td style='padding:8px;font-weight:bold;width:40%;'>Owner:</td><td style='padding:8px;'>{tracked_info.get('owner', 'N/A')}</td></tr>
+                        <tr style='background:#fff;'><td style='padding:8px;font-weight:bold;'>Aircraft Type:</td><td style='padding:8px;'>{tracked_info.get('model', 'N/A')}</td></tr>
+                        <tr><td style='padding:8px;font-weight:bold;'>Registration:</td><td style='padding:8px;font-family:monospace;'>{tail}</td></tr>
+                        <tr style='background:#fff;'><td style='padding:8px;font-weight:bold;'>ICAO Hex:</td><td style='padding:8px;font-family:monospace;'>{icao}</td></tr>
                     </table>
                 </div>
-                
+
+                <div style='background:#e8f5e9;padding:25px;border-radius:8px;margin:20px 0;'>
+                    <h3 style='color:#2e7d32;margin:0 0 20px 0;border-bottom:2px solid #c8e6c9;padding-bottom:10px;'>Current Flight Status</h3>
+                    <table style='width:100%;border-collapse:collapse;'>
+                        <tr><td style='padding:8px;font-weight:bold;width:40%;'>Callsign:</td><td style='padding:8px;font-family:monospace;'>{aircraft.get('flight', 'N/A').strip() if aircraft.get('flight') else 'N/A'}</td></tr>
+                        <tr style='background:rgba(255,255,255,0.5);'><td style='padding:8px;font-weight:bold;'>Altitude:</td><td style='padding:8px;'>{aircraft.get('alt_baro', 'N/A'):,} ft</td></tr>
+                        <tr><td style='padding:8px;font-weight:bold;'>Ground Speed:</td><td style='padding:8px;'>{aircraft.get('gs', 'N/A')} knots</td></tr>
+                        <tr style='background:rgba(255,255,255,0.5);'><td style='padding:8px;font-weight:bold;'>Heading:</td><td style='padding:8px;'>{heading_text}</td></tr>
+                        <tr><td style='padding:8px;font-weight:bold;'>Vertical Rate:</td><td style='padding:8px;'>{vert_text}</td></tr>
+                        <tr style='background:rgba(255,255,255,0.5);'><td style='padding:8px;font-weight:bold;'>Squawk:</td><td style='padding:8px;font-family:monospace;'>{aircraft.get('squawk', 'N/A')}</td></tr>
+                    </table>
+                </div>
+
+                <div style='text-align:center;margin:25px 0;'>
+                    <h3 style='color:#666;margin:0 0 15px 0;font-size:16px;'>Track This Flight:</h3>
+                    <div style='display:inline-block;'>
+                        <a href='https://www.flightaware.com/live/flight/{icao}'
+                           style='display:inline-block;background:#0066CC;color:white;padding:12px 20px;text-decoration:none;border-radius:6px;font-weight:bold;margin:5px;'>
+                            FlightAware
+                        </a>
+                        <a href='https://globe.adsbexchange.com/?icao={icao}'
+                           style='display:inline-block;background:#FF6B35;color:white;padding:12px 20px;text-decoration:none;border-radius:6px;font-weight:bold;margin:5px;'>
+                            ADS-B Exchange
+                        </a>
+                        <a href='https://www.flightradar24.com/data/aircraft/{tail.lower()}'
+                           style='display:inline-block;background:#FFD500;color:#333;padding:12px 20px;text-decoration:none;border-radius:6px;font-weight:bold;margin:5px;'>
+                            Flightradar24
+                        </a>
+                    </div>
+                </div>
+
                 <div style='text-align:center;margin:20px 0;'>
-                    <a href='https://flightaware.com/live/flight/{aircraft.get("hex", "").upper()}' 
-                       style='background:#4CAF50;color:white;padding:12px 25px;text-decoration:none;border-radius:5px;font-weight:bold;'>
-                        Track on FlightAware
+                    <a href='https://www.google.com/maps?q={lat},{lon}'
+                       style='display:inline-block;background:#4CAF50;color:white;padding:12px 25px;text-decoration:none;border-radius:6px;font-weight:bold;'>
+                        📍 View Location on Map
                     </a>
                 </div>
-                
-                <div style='text-align:center;margin-top:20px;padding-top:15px;border-top:1px solid #ddd;'>
-                    <p style='font-size:12px;color:#666;margin:5px 0;'>
-                        Detected: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}<br>
-                        FlightTrak Enhanced Alert System
+
+                <div style='text-align:center;margin-top:30px;padding-top:20px;border-top:2px solid #e0e0e0;'>
+                    <p style='font-size:13px;color:#999;margin:5px 0;'>
+                        Detected: {datetime.now().strftime('%B %d, %Y at %I:%M:%S %p')}<br>
+                        <strong>FlightTrak Detection System</strong> • {lat:.4f}, {lon:.4f}
                     </p>
                 </div>
             </div>

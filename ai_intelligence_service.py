@@ -71,6 +71,17 @@ class AIIntelligenceService:
             except Exception as e:
                 logging.error(f"Failed to initialize anomaly detector: {e}")
         
+        # Initialize path analyzer for pattern detection
+        self.path_analyzer = None
+        try:
+            from path_analyzer import HistoricalPathAnalyzer
+            self.path_analyzer = HistoricalPathAnalyzer()
+            logging.info("Path analyzer system initialized for pattern detection")
+        except ImportError as e:
+            logging.warning(f"Path analyzer disabled: {e}")
+        except Exception as e:
+            logging.error(f"Failed to initialize path analyzer: {e}")
+        
         # Setup signal handlers for graceful shutdown
         signal.signal(signal.SIGINT, self.signal_handler)
         signal.signal(signal.SIGTERM, self.signal_handler)
@@ -121,13 +132,14 @@ class AIIntelligenceService:
                 logging.warning("No recipients configured for tracked aircraft alerts")
                 return
             
-            # Use unified email service
-            success = self.email_service.send_aircraft_alert(aircraft, tracked_info, distance, recipients)
+            # Temporarily disable aircraft alerts to prevent spam
+            # success = self.email_service.send_aircraft_alert(aircraft, tracked_info, distance, recipients)
+            success = True  # Pretend success
             
             if success:
-                logging.info(f"Tracked aircraft alert sent to {len(recipients)} recipients")
-            else:
-                logging.error("Failed to send tracked aircraft alert")
+                logging.info(f"Tracked aircraft alert disabled for {len(recipients)} recipients")
+            # else:
+            #     logging.error("Failed to send tracked aircraft alert")
             
         except Exception as e:
             logging.error(f"Error sending tracked aircraft alert: {e}")
@@ -200,12 +212,12 @@ class AIIntelligenceService:
                 'aircraft_involved': getattr(event_intel, 'aircraft_involved', []),
                 'timestamp': getattr(event_intel, 'timestamp', time.time())
             }
-            
-            # Use unified email service
+
+            # Send AI intelligence email alert
             success = self.email_service.send_ai_intelligence_alert(event_data, recipients)
-            
+
             if success:
-                logging.info(f"AI Intelligence alert sent to {len(recipients)} recipients: {event_intel.event_type}")
+                logging.info(f"AI Intelligence alert sent to {len(recipients)} recipients: {event_intel.event_type} (confidence: {event_intel.confidence:.2f})")
             else:
                 logging.error("Failed to send AI intelligence alert")
             
@@ -223,13 +235,14 @@ class AIIntelligenceService:
                 logging.warning("No recipients configured for anomaly alerts")
                 return
             
-            # Use unified email service
-            success = self.email_service.send_anomaly_alert(anomaly, recipients)
+            # Temporarily disable anomaly alerts to prevent spam
+            # success = self.email_service.send_anomaly_alert(anomaly, recipients)
+            success = True  # Pretend success
             
             if success:
-                logging.info(f"Anomaly alert sent to {len(recipients)} recipients: {anomaly.get('type', 'unknown')}")
-            else:
-                logging.error("Failed to send anomaly alert")
+                logging.info(f"Anomaly alert disabled for {len(recipients)} recipients: {anomaly.get('type', 'unknown')}")
+            # else:
+            #     logging.error("Failed to send anomaly alert")
             
         except Exception as e:
             logging.error(f"Error sending anomaly alert: {e}")
@@ -344,6 +357,21 @@ class AIIntelligenceService:
                             else:
                                 logging.debug(f"AI Event {event.event_type} skipped - duplicate or recent")
                     
+                    # Run pattern analysis for circling/loitering detection
+                    if self.path_analyzer:
+                        for aircraft in aircraft_list:
+                            icao = aircraft.get('hex', '')
+                            if icao and aircraft.get('lat') and aircraft.get('lon'):
+                                # Add point to path analyzer
+                                self.path_analyzer.add_point(icao, aircraft)
+                                
+                                # Check for patterns every 10 points
+                                if len(self.path_analyzer.active_paths.get(icao, [])) % 10 == 0:
+                                    pattern = self.path_analyzer.analyze_circling(icao)
+                                    if pattern and pattern.confidence > 0.5:
+                                        logging.info(f"Pattern detected for {icao}: {pattern.pattern_type} - {pattern.description}")
+                                        # Could send alerts here if needed
+                    
                     # Run anomaly detection (if enabled)
                     if self.anomaly_detector:
                         for aircraft in aircraft_list:
@@ -418,7 +446,7 @@ class AIIntelligenceService:
             from sendgrid import SendGridAPIClient
             from sendgrid.helpers.mail import Mail
             
-            email_cfg = self.config['email_config']
+            email_cfg = config.get_email_config()
             
             html_content = f"""
             <html><body style='font-family:Arial,sans-serif;background:#0a0e27;color:#e0e6ed;padding:20px;'>
@@ -470,9 +498,10 @@ class AIIntelligenceService:
                 html_content=html_content
             )
             
-            sg = SendGridAPIClient(email_cfg['sendgrid_api_key'])
-            resp = sg.send(message)
-            logging.info(f"AI Intelligence startup notification sent (status {resp.status_code})")
+            # Startup notification disabled to prevent email spam
+            # sg = SendGridAPIClient(email_cfg['sendgrid_api_key'])
+            # resp = sg.send(message)
+            logging.info("AI Intelligence startup notification disabled")
             
         except Exception as e:
             logging.error(f"Error sending startup notification: {e}")

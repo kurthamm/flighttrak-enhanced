@@ -323,12 +323,9 @@ def send_pattern_alert(event_type, description, aircraft_data):
         html_content=html_content
     )
     
-    try:
-        sg = SendGridAPIClient(email_cfg['sendgrid_api_key'])
-        resp = sg.send(message)
-        logging.info(f"Pattern alert sent for {event_type}: {aircraft_data.get('hex', 'Unknown')}")
-    except Exception as e:
-        logging.error(f"Error sending pattern alert: {e}")
+    # Email sending disabled - handled by flight_monitor.py
+    # Dashboard should only display, not send alerts
+    logging.info(f"Pattern detected (email disabled in dashboard): {event_type} - {aircraft_data.get('hex', 'Unknown')}")
 
 def log_event(event_type, description, aircraft_data):
     """Log interesting events"""
@@ -348,9 +345,9 @@ def log_event(event_type, description, aircraft_data):
     elif event_type in ['PATTERN', 'ALTITUDE', 'SPEED']:
         stats['patterns_detected'] += 1
     
-    # Send email alert for important events
-    if event_type in ['EMERGENCY', 'PATTERN']:
-        send_pattern_alert(event_type, description, aircraft_data)
+    # Email alerts disabled - handled by flight_monitor.py
+    # if event_type in ['EMERGENCY', 'PATTERN']:
+    #     send_pattern_alert(event_type, description, aircraft_data)
     
     print(f"[{event_type}] {description}")
 
@@ -435,7 +432,9 @@ def analyze_aircraft(aircraft):
         if len(stats_data['altitudes']) >= 5:
             alts = list(stats_data['altitudes'])
             alt_change = max(alts) - min(alts)
-            if alt_change > 5000:  # More than 5000ft change in recent readings
+            # Changed threshold: 5000ft/min would be 833ft in 10 seconds (5 readings * 2 sec)
+            # Using 2000ft threshold for 10 seconds = 12,000 ft/min which is truly extreme
+            if alt_change > 2000:  # More than 2000ft change in 10 seconds (extremely rapid)
                 stats_data['rapid_changes'] += 1
                 
                 # Get enhanced context for better alerting
@@ -600,6 +599,20 @@ def update_aircraft_data():
                 
                 aircraft_history[hex_code]['data'] = aircraft
                 aircraft_history[hex_code]['last_seen'] = time.time()
+            
+            # Clean up old aircraft from history (remove those not seen for >60 seconds)
+            current_time = time.time()
+            stale_aircraft = []
+            for hex_code, info in aircraft_history.items():
+                if current_time - info.get('last_seen', 0) > 60:
+                    stale_aircraft.append(hex_code)
+            
+            # Remove stale aircraft
+            for hex_code in stale_aircraft:
+                del aircraft_history[hex_code]
+                # Also clean up from aircraft_stats if present
+                if hex_code in aircraft_stats:
+                    del aircraft_stats[hex_code]
             
             # Update stats
             stats['max_simultaneous'] = max(stats['max_simultaneous'], len(current_aircraft))

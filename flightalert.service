@@ -1,20 +1,20 @@
 [Unit]
-Description=FlightAlert Aircraft Monitoring Service
+Description=FlightTrak Unified Monitoring Service
 After=network.target
 
 [Service]
 Type=simple
-User=root
-Group=root
-WorkingDirectory=/root/flighttrak
-Environment="PATH=/root/flighttrak/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-#ExecStartPre=/root/flighttrak/venv/bin/python3 /root/flighttrak/send_service_notification.py start
-ExecStart=/root/flighttrak/venv/bin/python3 /root/flighttrak/fa_enhanced_v2.py
-ExecReload=/root/flighttrak/venv/bin/python3 /root/flighttrak/send_service_notification.py reload
+User=kurt
+Group=kurt
+WorkingDirectory=/home/kurt/flighttrak
+Environment="PATH=/home/kurt/flighttrak/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+#ExecStartPre=/home/kurt/flighttrak/venv/bin/python3 /home/kurt/flighttrak/send_service_notification.py start
+ExecStart=/home/kurt/flighttrak/venv/bin/python3 /home/kurt/flighttrak/flight_monitor.py
+ExecReload=/home/kurt/flighttrak/venv/bin/python3 /home/kurt/flighttrak/send_service_notification.py reload
 Restart=always
 RestartSec=10
-StandardOutput=append:/root/flighttrak/flightalert.log
-StandardError=append:/root/flighttrak/flightalert.log
+StandardOutput=append:/home/kurt/flighttrak/flighttrak_monitor.log
+StandardError=append:/home/kurt/flighttrak/flighttrak_monitor.log
 
 [Install]
 WantedBy=multi-user.target

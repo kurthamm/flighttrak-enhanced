@@ -89,7 +89,7 @@ class HistoricalPathAnalyzer:
                     speed REAL,
                     heading INTEGER,
                     vertical_rate INTEGER,
-                    created_date DATE DEFAULT CURRENT_DATE,
+                    created_date DATE DEFAULT CURRENT_DATE
                 )
             ''')
             
@@ -106,7 +106,7 @@ class HistoricalPathAnalyzer:
                     risk_level TEXT,
                     description TEXT,
                     detected_at REAL NOT NULL,
-                    created_date DATE DEFAULT CURRENT_DATE,
+                    created_date DATE DEFAULT CURRENT_DATE
                 )
             ''')
             

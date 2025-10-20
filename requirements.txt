@@ -18,6 +18,7 @@ flask>=3.0.0
 # Optional dependencies for enhanced features
 psutil>=5.9.0  # For system stats
 geopy>=2.3.0   # For geographic calculations
+tweepy>=4.14.0 # For Twitter/X posting
 
 # Development and testing
 pytest>=7.4.0
