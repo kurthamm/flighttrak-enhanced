@@ -10,6 +10,7 @@ __pycache__/
 # Logs and runtime data
 *.log
 detected_aircraft.txt
+emergency_events.json
 data_backups/
 dashboard.log
 dashboard_enhanced.log
