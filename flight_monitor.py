@@ -9,9 +9,10 @@ import time
 import threading
 import signal
 import sys
+import subprocess
 from datetime import datetime, timedelta
 from collections import defaultdict, deque
-from typing import Dict, List, Set, Optional, Any
+from typing import Dict, List, Set, Optional, Any, Tuple
 import requests
 import json
 
@@ -76,6 +77,11 @@ class FlightMonitor:
         # Alert deduplication
         self.recent_alerts = set()
         self.alert_cooldown = 300  # 5 minutes
+
+        # Health monitoring
+        self.last_aircraft_seen = time.time()  # Track when we last saw ANY aircraft
+        self.last_health_alert = 0  # Track when we last sent a health alert
+        self.total_aircraft_seen = 0  # Count of all aircraft detected (for stats)
         
         # Anomaly alert rate limiting
         self.anomaly_alert_times = defaultdict(float)  # Track last alert time per aircraft/type
@@ -138,12 +144,17 @@ class FlightMonitor:
             response = requests.get(self.planes_url, timeout=10)
             response.raise_for_status()
             data = response.json()
-            
+
             aircraft_list = data.get('aircraft', [])
             logging.debug(f"Fetched {len(aircraft_list)} aircraft")
-            
+
+            # Update health monitoring: if we see ANY aircraft, update the timestamp
+            if aircraft_list:
+                self.last_aircraft_seen = time.time()
+                self.total_aircraft_seen += len(aircraft_list)
+
             return aircraft_list
-            
+
         except Exception as e:
             logging.error(f"Error fetching aircraft data: {e}")
             return []
@@ -317,13 +328,170 @@ class FlightMonitor:
             self.recent_alerts.clear()
             logging.info("Cleared old alert keys")
     
+    def _run_diagnostics(self) -> Dict[str, Any]:
+        """Run system diagnostics to identify specific problems"""
+        diagnostics = {
+            'network': {'status': 'unknown', 'details': ''},
+            'planes_url': {'status': 'unknown', 'details': ''},
+            'dump1090_service': {'status': 'unknown', 'details': ''},
+            'dump1090_port': {'status': 'unknown', 'details': ''},
+        }
+
+        # 1. Test basic network connectivity
+        try:
+            response = requests.get('https://www.google.com', timeout=5)
+            diagnostics['network']['status'] = 'ok'
+            diagnostics['network']['details'] = 'Internet connectivity OK'
+        except Exception as e:
+            diagnostics['network']['status'] = 'failed'
+            diagnostics['network']['details'] = f'No internet connectivity: {str(e)}'
+
+        # 2. Test planes.hamm.me URL
+        try:
+            response = requests.get(self.planes_url, timeout=10)
+            data = response.json()
+            aircraft_count = len(data.get('aircraft', []))
+
+            if response.status_code == 200:
+                if aircraft_count == 0:
+                    diagnostics['planes_url']['status'] = 'warning'
+                    diagnostics['planes_url']['details'] = f'URL reachable but reporting 0 aircraft (dump1090 may be running but not receiving data)'
+                else:
+                    diagnostics['planes_url']['status'] = 'ok'
+                    diagnostics['planes_url']['details'] = f'URL reachable, reporting {aircraft_count} aircraft'
+            else:
+                diagnostics['planes_url']['status'] = 'failed'
+                diagnostics['planes_url']['details'] = f'HTTP {response.status_code}'
+        except requests.exceptions.ConnectionError as e:
+            diagnostics['planes_url']['status'] = 'failed'
+            diagnostics['planes_url']['details'] = f'Cannot connect to {self.planes_url} (Cloudflare tunnel may be down)'
+        except Exception as e:
+            diagnostics['planes_url']['status'] = 'failed'
+            diagnostics['planes_url']['details'] = f'Error: {str(e)}'
+
+        # 3. Check dump1090 systemd service status
+        try:
+            result = subprocess.run(
+                ['systemctl', 'is-active', 'dump1090'],
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+
+            if result.returncode == 0 and result.stdout.strip() == 'active':
+                diagnostics['dump1090_service']['status'] = 'ok'
+                diagnostics['dump1090_service']['details'] = 'Service is active and running'
+            else:
+                diagnostics['dump1090_service']['status'] = 'failed'
+                status = result.stdout.strip() or 'inactive'
+                diagnostics['dump1090_service']['details'] = f'Service status: {status}'
+
+                # Try to get more details
+                try:
+                    status_result = subprocess.run(
+                        ['systemctl', 'status', 'dump1090'],
+                        capture_output=True,
+                        text=True,
+                        timeout=5
+                    )
+                    # Extract the Active line
+                    for line in status_result.stdout.split('\n'):
+                        if 'Active:' in line:
+                            diagnostics['dump1090_service']['details'] = line.strip()
+                            break
+                except:
+                    pass
+
+        except subprocess.TimeoutExpired:
+            diagnostics['dump1090_service']['status'] = 'failed'
+            diagnostics['dump1090_service']['details'] = 'systemctl command timed out'
+        except FileNotFoundError:
+            diagnostics['dump1090_service']['status'] = 'unknown'
+            diagnostics['dump1090_service']['details'] = 'systemctl not available (not running as systemd?)'
+        except Exception as e:
+            diagnostics['dump1090_service']['status'] = 'unknown'
+            diagnostics['dump1090_service']['details'] = f'Cannot check service: {str(e)}'
+
+        # 4. Test dump1090 local port connectivity (if running locally)
+        dump1090_port = config.get('monitoring.dump1090_port', 30002)
+        dump1090_host = config.get('monitoring.dump1090_host', '127.0.0.1')
+
+        # Only test if dump1090 is configured for local access
+        if dump1090_host in ['127.0.0.1', 'localhost']:
+            try:
+                import socket
+                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                sock.settimeout(3)
+                result = sock.connect_ex((dump1090_host, dump1090_port))
+                sock.close()
+
+                if result == 0:
+                    diagnostics['dump1090_port']['status'] = 'ok'
+                    diagnostics['dump1090_port']['details'] = f'Port {dump1090_port} is open and listening'
+                else:
+                    diagnostics['dump1090_port']['status'] = 'failed'
+                    diagnostics['dump1090_port']['details'] = f'Port {dump1090_port} is not accessible (receiver may not be running)'
+            except Exception as e:
+                diagnostics['dump1090_port']['status'] = 'failed'
+                diagnostics['dump1090_port']['details'] = f'Cannot test port: {str(e)}'
+        else:
+            diagnostics['dump1090_port']['status'] = 'skipped'
+            diagnostics['dump1090_port']['details'] = f'Using remote dump1090 via {self.planes_url}'
+
+        return diagnostics
+
+    def _check_system_health(self) -> None:
+        """Check if system is healthy (seeing aircraft) and alert if not"""
+        if not config.is_alert_enabled('health_monitoring'):
+            return
+
+        try:
+            threshold_minutes = config.get('alerts.health_monitoring.no_aircraft_threshold_minutes', 60)
+            alert_cooldown_hours = config.get('alerts.health_monitoring.alert_cooldown_hours', 4)
+
+            current_time = time.time()
+            time_since_aircraft = current_time - self.last_aircraft_seen
+            time_since_last_alert = current_time - self.last_health_alert
+
+            # Convert to minutes for comparison
+            minutes_since_aircraft = time_since_aircraft / 60
+            hours_since_alert = time_since_last_alert / 3600
+
+            # Check if we should send an alert
+            if minutes_since_aircraft > threshold_minutes and hours_since_alert > alert_cooldown_hours:
+                recipients = config.get_alert_recipients('health_monitoring')
+                if recipients:
+                    logging.warning(f"Health check: No aircraft detected for {minutes_since_aircraft:.1f} minutes")
+                    logging.info("Running system diagnostics...")
+
+                    # Run diagnostics to identify the actual problem
+                    diagnostics = self._run_diagnostics()
+
+                    success = self.email_service.send_health_alert(
+                        minutes_since_aircraft,
+                        threshold_minutes,
+                        diagnostics,
+                        recipients
+                    )
+
+                    if success:
+                        self.last_health_alert = current_time
+                        logging.info(f"Health alert sent to {len(recipients)} recipients")
+
+                        # Log diagnostic results
+                        for check, result in diagnostics.items():
+                            logging.info(f"  {check}: {result['status']} - {result['details']}")
+
+        except Exception as e:
+            logging.error(f"Error checking system health: {e}")
+
     def _send_alive_notification(self) -> None:
         """Send periodic alive notification"""
         try:
             notification_email = config.get('email.notification_email')
             if not notification_email:
                 return
-            
+
             stats = {
                 'tracked_aircraft': len(self.tracked_aircraft),
                 'detected_today': len(self.detected_aircraft),
@@ -332,14 +500,14 @@ class FlightMonitor:
                     'anomaly_detection': self.anomaly_detector is not None
                 }
             }
-            
+
             success = self.email_service.send_service_notification(
                 'FlightTrak Monitor', 'alive', notification_email, stats
             )
-            
+
             if success:
                 logging.info("Alive notification sent")
-                
+
         except Exception as e:
             logging.error(f"Error sending alive notification: {e}")
     
@@ -369,7 +537,10 @@ class FlightMonitor:
 
                     # Clean up old alerts periodically
                     self._cleanup_old_alerts()
-                
+
+                # Check system health (no aircraft detected)
+                self._check_system_health()
+
                 # Send alive notification (disabled temporarily)
                 current_time = time.time()
                 if current_time - last_alive > alive_interval:

@@ -70,7 +70,7 @@ class FlightTrakConfig:
             'alerts': {
                 'tracked_aircraft': {
                     'enabled': os.getenv('ALERTS_TRACKED_ENABLED', 'true').lower() == 'true',
-                    'recipients': self._parse_recipients(os.getenv('ALERTS_TRACKED_RECIPIENTS', 
+                    'recipients': self._parse_recipients(os.getenv('ALERTS_TRACKED_RECIPIENTS',
                         config.get('alert_config', {}).get('tracked_aircraft_alerts', {}).get('recipients', [])))
                 },
                 'ai_intelligence': {
@@ -84,6 +84,16 @@ class FlightTrakConfig:
                     'enabled': os.getenv('ALERTS_ANOMALY_ENABLED', 'true').lower() == 'true',
                     'recipients': self._parse_recipients(os.getenv('ALERTS_ANOMALY_RECIPIENTS',
                         config.get('alert_config', {}).get('anomaly_alerts', {}).get('recipients', [])))
+                },
+                'health_monitoring': {
+                    'enabled': os.getenv('ALERTS_HEALTH_ENABLED',
+                        str(config.get('alert_config', {}).get('health_monitoring', {}).get('enabled', 'true'))).lower() == 'true',
+                    'recipients': self._parse_recipients(os.getenv('ALERTS_HEALTH_RECIPIENTS',
+                        config.get('alert_config', {}).get('health_monitoring', {}).get('recipients', []))),
+                    'no_aircraft_threshold_minutes': int(os.getenv('HEALTH_NO_AIRCRAFT_THRESHOLD',
+                        config.get('alert_config', {}).get('health_monitoring', {}).get('no_aircraft_threshold_minutes', 60))),
+                    'alert_cooldown_hours': int(os.getenv('HEALTH_ALERT_COOLDOWN',
+                        config.get('alert_config', {}).get('health_monitoring', {}).get('alert_cooldown_hours', 4)))
                 }
             },
             
