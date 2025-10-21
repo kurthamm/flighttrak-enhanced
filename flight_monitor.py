@@ -249,6 +249,11 @@ class FlightMonitor:
                             self.recent_alerts.add(alert_key)
                             self.anomaly_alert_times[alert_key] = current_time
                             self.anomaly_alert_counts[icao][current_hour] += 1
+
+                            # Log emergency squawk events to file
+                            if anomaly_type == 'EMERGENCY_SQUAWK':
+                                self._log_emergency_event(anomaly)
+
                             logging.info(f"Anomaly alert sent: {icao} - {anomaly_type} ({anomaly.get('severity', 'UNKNOWN')})")
                             
             except Exception as e:
@@ -310,13 +315,50 @@ class FlightMonitor:
                 'distance': round(distance, 2),
                 'squawk': aircraft.get('squawk', 'N/A')
             }
-            
+
             detected_file = config.get('files.detected_aircraft')
             with open(detected_file, 'a') as f:
                 f.write(json.dumps(log_entry) + '\n')
-                
+
         except Exception as e:
             logging.error(f"Error logging aircraft detection: {e}")
+
+    def _log_emergency_event(self, anomaly: Dict) -> None:
+        """Log emergency squawk event to file"""
+        try:
+            aircraft = anomaly.get('aircraft', {})
+
+            # Emergency type mapping
+            emergency_types = {
+                '7500': 'HIJACK',
+                '7600': 'RADIO FAILURE',
+                '7700': 'EMERGENCY',
+                '7777': 'MILITARY INTERCEPT'
+            }
+
+            squawk = anomaly.get('squawk_code', '')
+
+            log_entry = {
+                'timestamp': datetime.now().isoformat(),
+                'icao': aircraft.get('hex', '').upper(),
+                'squawk': squawk,
+                'type': emergency_types.get(squawk, 'UNKNOWN'),
+                'description': anomaly.get('description', 'Unknown emergency'),
+                'flight': aircraft.get('flight', 'N/A'),
+                'altitude': aircraft.get('alt_baro', 'N/A'),
+                'speed': aircraft.get('gs', 'N/A'),
+                'lat': aircraft.get('lat', 'N/A'),
+                'lon': aircraft.get('lon', 'N/A')
+            }
+
+            emergency_file = Path('emergency_events.json')
+            with open(emergency_file, 'a') as f:
+                f.write(json.dumps(log_entry) + '\n')
+
+            logging.info(f"Emergency event logged: {squawk} - {aircraft.get('hex', 'Unknown')}")
+
+        except Exception as e:
+            logging.error(f"Error logging emergency event: {e}")
     
     def _cleanup_old_alerts(self) -> None:
         """Clean up old alert keys to prevent memory buildup"""

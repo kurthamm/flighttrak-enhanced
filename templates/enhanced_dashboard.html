@@ -3,11 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FlightTrak Enhanced Dashboard</title>
+    <title>FlightTrak Dashboard</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.ico">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { 
+        body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: #0a0e27;
             color: #e0e6ed;
@@ -43,7 +44,6 @@
             text-align: center;
         }
         .stat-card.alert { border-color: #ff6b6b; }
-        .stat-card.warning { border-color: #feca57; }
         .stat-card.info { border-color: #4fc3f7; }
         .stat-value {
             font-size: 1.8em;
@@ -51,7 +51,6 @@
             color: #4fc3f7;
         }
         .stat-value.alert { color: #ff6b6b; }
-        .stat-value.warning { color: #feca57; }
         .stat-label {
             color: #8892b0;
             font-size: 0.85em;
@@ -97,9 +96,7 @@
         .distance-far { color: #48dbfb; }
         .altitude { color: #a29bfe; }
         .speed { color: #6c5ce7; }
-        .analysis-good { color: #00d2d3; }
-        .analysis-warning { color: #feca57; }
-        .analysis-alert { color: #ff6b6b; }
+        .tracked-aircraft { background: #2a3f5f !important; }
         .no-data {
             text-align: center;
             padding: 40px;
@@ -125,7 +122,7 @@
         }
         .flight-link:hover { text-decoration: underline; }
         .event-list {
-            max-height: 300px;
+            max-height: 400px;
             overflow-y: auto;
         }
         .event-item {
@@ -135,10 +132,6 @@
         }
         .event-item:last-child { border-bottom: none; }
         .event-emergency { border-left: 4px solid #ff6b6b; }
-        .event-pattern { border-left: 4px solid #feca57; }
-        .event-altitude { border-left: 4px solid #a29bfe; }
-        .event-speed { border-left: 4px solid #6c5ce7; }
-        .event-callsign { border-left: 4px solid #00d2d3; }
         .event-time {
             color: #8892b0;
             font-size: 0.8em;
@@ -152,25 +145,29 @@
             font-family: monospace;
         }
         .loading { opacity: 0.5; }
-        .patterns-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
+        .tracked-list {
             padding: 15px;
+            max-height: 400px;
+            overflow-y: auto;
         }
-        .pattern-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 8px 0;
-        }
-        .pattern-label {
-            color: #8892b0;
+        .tracked-item {
+            padding: 10px;
+            border-bottom: 1px solid #2a3f5f;
             font-size: 0.9em;
         }
-        .pattern-value {
+        .tracked-item:last-child { border-bottom: none; }
+        .tracked-icao {
             color: #4fc3f7;
+            font-family: monospace;
             font-weight: bold;
+        }
+        .tracked-owner {
+            color: #e0e6ed;
+            font-weight: 500;
+        }
+        .tracked-model {
+            color: #8892b0;
+            font-size: 0.85em;
         }
         @media (max-width: 1200px) {
             .dashboard-grid {
@@ -196,8 +193,8 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>FlightTrak Enhanced Dashboard <span class="update-indicator"></span></h1>
-            <p>Real-time aircraft monitoring with pattern detection and email alerts</p>
+            <h1>FlightTrak Dashboard <span class="update-indicator"></span></h1>
+            <p>Real-time aircraft tracking with emergency detection</p>
         </div>
 
         <div class="dashboard-grid">
@@ -212,17 +209,21 @@
                         <div class="stat-value" id="total-seen">0</div>
                         <div class="stat-label">Last 24 Hours</div>
                     </div>
-                    <div class="stat-card warning">
-                        <div class="stat-value warning" id="patterns-detected">0</div>
-                        <div class="stat-label">Patterns Detected</div>
+                    <div class="stat-card info">
+                        <div class="stat-value" id="max-simultaneous">0</div>
+                        <div class="stat-label">Max Simultaneous</div>
                     </div>
                     <div class="stat-card alert">
                         <div class="stat-value alert" id="emergencies-detected">0</div>
-                        <div class="stat-label">Emergencies</div>
+                        <div class="stat-label">Emergency Events</div>
                     </div>
                     <div class="stat-card info">
                         <div class="stat-value" id="closest-approach">--</div>
                         <div class="stat-label">Closest Approach (mi)</div>
+                    </div>
+                    <div class="stat-card info">
+                        <div class="stat-value" id="tracked-count">69</div>
+                        <div class="stat-label">Tracked Aircraft</div>
                     </div>
                 </div>
 
@@ -234,23 +235,22 @@
                             <thead>
                                 <tr>
                                     <th>ICAO</th>
-                                    <th>Flight</th>
+                                    <th>Flight/Owner</th>
                                     <th>Distance</th>
                                     <th>Altitude</th>
                                     <th>Speed</th>
                                     <th>Heading</th>
                                     <th>Squawk</th>
-                                    <th>Analysis</th>
                                     <th>Age</th>
                                 </tr>
                             </thead>
                             <tbody id="aircraft-tbody">
-                                <tr><td colspan="9" class="no-data">Loading aircraft data...</td></tr>
+                                <tr><td colspan="8" class="no-data">Loading aircraft data...</td></tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
-                
+
                 <!-- Map View -->
                 <div class="section">
                     <div class="section-header">🗺️ Live Aircraft Map</div>
@@ -259,57 +259,19 @@
             </div>
 
             <div class="sidebar">
-                <!-- Pattern Analysis -->
+                <!-- Tracked Aircraft -->
                 <div class="section">
-                    <div class="section-header">🔍 Pattern Analysis</div>
-                    <div class="patterns-grid" id="patterns-grid">
-                        <div class="pattern-item">
-                            <span class="pattern-label">Emergency Aircraft:</span>
-                            <span class="pattern-value" id="emergency-aircraft">0</span>
-                        </div>
-                        <div class="pattern-item">
-                            <span class="pattern-label">Multiple Callsigns:</span>
-                            <span class="pattern-value" id="multiple-callsigns">0</span>
-                        </div>
-                        <div class="pattern-item">
-                            <span class="pattern-label">Rapid Climbers:</span>
-                            <span class="pattern-value" id="rapid-climbers">0</span>
-                        </div>
-                        <div class="pattern-item">
-                            <span class="pattern-label">Circling Aircraft:</span>
-                            <span class="pattern-value" id="circling-aircraft">0</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- AI Intelligence Status -->
-                <div class="section">
-                    <div class="section-header">🤖 AI Intelligence</div>
-                    <div class="patterns-grid" id="ai-intelligence">
-                        <div class="pattern-item">
-                            <span class="pattern-label">Service Status:</span>
-                            <span class="pattern-value" id="ai-service-status">Checking...</span>
-                        </div>
-                        <div class="pattern-item">
-                            <span class="pattern-label">Intelligence Sources:</span>
-                            <span class="pattern-value" id="ai-sources">10</span>
-                        </div>
-                        <div class="pattern-item">
-                            <span class="pattern-label">Alerts Sent:</span>
-                            <span class="pattern-value" id="ai-alerts">0</span>
-                        </div>
-                        <div class="pattern-item">
-                            <span class="pattern-label">News Correlations:</span>
-                            <span class="pattern-value" id="ai-news">0</span>
-                        </div>
+                    <div class="section-header">⭐ Tracked Aircraft</div>
+                    <div class="tracked-list" id="tracked-list">
+                        <div class="no-data">Loading...</div>
                     </div>
                 </div>
 
                 <!-- Recent Events -->
                 <div class="section">
-                    <div class="section-header">🚨 Recent Events</div>
+                    <div class="section-header">🚨 Emergency Events</div>
                     <div class="event-list" id="events-list">
-                        <div class="no-data">No events detected yet</div>
+                        <div class="no-data">No emergencies detected</div>
                     </div>
                 </div>
             </div>
@@ -322,15 +284,15 @@
         let map;
         let aircraftMarkers = {};
         let homeMarker;
-        
+
         // Initialize map
         function initMap() {
             map = L.map('map').setView([34.1133171, -80.9024019], 10);
-            
+
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '© OpenStreetMap contributors'
             }).addTo(map);
-            
+
             // Add home marker
             const homeIcon = L.divIcon({
                 html: '<div style="background: #4a90e2; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.4);"></div>',
@@ -341,7 +303,7 @@
                 .bindPopup('<b>Home Location</b>')
                 .addTo(map);
         }
-        
+
         // Update aircraft on map
         function updateMapAircraft(aircraft) {
             // Remove markers for aircraft no longer present
@@ -351,26 +313,34 @@
                     delete aircraftMarkers[hex];
                 }
             });
-            
+
             // Update or add markers
             aircraft.forEach(ac => {
                 if (!ac.lat || !ac.lon) return;
-                
+
                 const rotation = ac.track || 0;
-                const isEmergency = ac.squawk === '7700' || ac.squawk === '7600' || ac.squawk === '7500';
-                const color = isEmergency ? '#ff6b6b' : (ac.distance < 10 ? '#feca57' : '#4fc3f7');
-                
+                const isEmergency = ['7500', '7600', '7700', '7777'].includes(ac.squawk);
+                const isTracked = ac.tracked;
+                const color = isEmergency ? '#ff6b6b' : (isTracked ? '#feca57' : '#4fc3f7');
+
                 const icon = L.divIcon({
                     html: `<div style="transform: rotate(${rotation}deg); font-size: 20px; color: ${color};">✈️</div>`,
                     iconSize: [24, 24],
                     className: 'aircraft-icon'
                 });
-                
+
                 const popupContent = `
                     <div style="min-width: 200px;">
                         <h4 style="margin: 0 0 5px 0; color: #4fc3f7;">
-                            ${ac.flight?.trim() || ac.hex}
+                            ${ac.display_name || ac.hex}
                         </h4>
+                        ${ac.tracked ? `
+                            <div style="margin-bottom: 8px; padding: 5px; background: #2a3f5f; border-radius: 4px;">
+                                <div style="font-weight: bold; color: #feca57;">⭐ Tracked Aircraft</div>
+                                <div style="font-size: 12px; color: #8892b0;">${ac.owner || 'Unknown'}</div>
+                                <div style="font-size: 11px; color: #8892b0;">${ac.model || 'Unknown'}</div>
+                            </div>
+                        ` : ''}
                         <table style="font-size: 12px;">
                             <tr><td><b>Altitude:</b></td><td>${(ac.alt_baro || 0).toLocaleString()} ft</td></tr>
                             <tr><td><b>Speed:</b></td><td>${(ac.gs || 0).toFixed(0)} kts</td></tr>
@@ -383,7 +353,7 @@
                         </div>
                     </div>
                 `;
-                
+
                 if (aircraftMarkers[ac.hex]) {
                     // Update existing marker
                     aircraftMarkers[ac.hex].setLatLng([ac.lat, ac.lon]);
@@ -397,7 +367,7 @@
                 }
             });
         }
-        
+
         function formatDistance(distance) {
             if (!distance) return '--';
             let className = 'distance-far';
@@ -405,129 +375,113 @@
             else if (distance < 30) className = 'distance-medium';
             return `<span class="${className}">${distance} mi</span>`;
         }
-        
+
         function formatAltitude(alt) {
             if (!alt) return '--';
             return `<span class="altitude">${alt.toLocaleString()} ft</span>`;
         }
-        
+
         function formatSpeed(speed) {
             if (!speed) return '--';
             return `<span class="speed">${Math.round(speed)} kt</span>`;
         }
-        
-        function formatFlight(flight, hex) {
-            if (!flight || flight.trim() === '') {
-                return `${hex} 
-                    <a href="https://flightaware.com/live/flight/${hex}" 
-                       target="_blank" class="flight-link" title="View on FlightAware">[FA]</a>`;
-            }
-            return `<a href="https://flightaware.com/live/flight/${flight}" 
-                    target="_blank" class="flight-link" title="View on FlightAware">${flight}</a>`;
+
+        function formatFlight(aircraft) {
+            const name = aircraft.display_name || aircraft.hex;
+            const link = aircraft.flight?.trim() || aircraft.hex;
+            return `<a href="https://flightaware.com/live/flight/${link}"
+                    target="_blank" class="flight-link" title="View on FlightAware">${name}</a>`;
         }
-        
-        function formatAnalysis(analysis) {
-            let items = [];
-            if (analysis.callsigns > 1) items.push(`${analysis.callsigns} IDs`);
-            if (analysis.rapid_changes > 0) items.push(`${analysis.rapid_changes} climbs`);
-            if (analysis.duration > 60) items.push(`${Math.round(analysis.duration)}m`);
-            
-            if (items.length === 0) return '<span class="analysis-good">Normal</span>';
-            
-            let className = analysis.rapid_changes > 0 || analysis.callsigns > 2 ? 'analysis-alert' : 'analysis-warning';
-            return `<span class="${className}">${items.join(', ')}</span>`;
-        }
-        
+
         function formatTime(timestamp) {
-            return new Date(timestamp * 1000).toLocaleTimeString();
+            const date = new Date(timestamp);
+            return date.toLocaleString();
         }
-        
+
         function updateDashboard() {
             Promise.all([
                 fetch('/api/aircraft').then(r => r.json()),
                 fetch('/api/events').then(r => r.json()),
-                fetch('/api/patterns').then(r => r.json()),
-                fetch('/api/ai-intelligence').then(r => r.json())
-            ]).then(([aircraftData, eventsData, patternsData, aiData]) => {
+                fetch('/api/tracked').then(r => r.json())
+            ]).then(([aircraftData, eventsData, trackedData]) => {
                 // Update main stats
                 document.getElementById('current-count').textContent = aircraftData.stats.current;
                 document.getElementById('total-seen').textContent = aircraftData.stats.total_seen;
-                document.getElementById('patterns-detected').textContent = aircraftData.stats.patterns_detected;
-                document.getElementById('emergencies-detected').textContent = aircraftData.stats.emergencies_detected;
-                document.getElementById('closest-approach').textContent = 
+                document.getElementById('max-simultaneous').textContent = aircraftData.stats.max_simultaneous;
+                document.getElementById('emergencies-detected').textContent = eventsData.total_events || 0;
+                document.getElementById('closest-approach').textContent =
                     aircraftData.stats.closest_approach || '--';
-                
-                // Update pattern analysis
-                document.getElementById('emergency-aircraft').textContent = patternsData.emergency_aircraft;
-                document.getElementById('multiple-callsigns').textContent = patternsData.multiple_callsigns;
-                document.getElementById('rapid-climbers').textContent = patternsData.rapid_climbers;
-                document.getElementById('circling-aircraft').textContent = patternsData.circling_aircraft;
-                
-                // Update AI Intelligence status
-                const aiStatus = aiData.enabled ? 
-                    (aiData.service_status === 'running' ? '🟢 Online' : '🟡 Starting') : 
-                    '🔴 Offline';
-                document.getElementById('ai-service-status').textContent = aiStatus;
-                document.getElementById('ai-sources').textContent = aiData.enhanced_intelligence?.total_services || 10;
-                document.getElementById('ai-alerts').textContent = aiData.alerts_sent || 0;
-                document.getElementById('ai-news').textContent = aiData.news_correlations || 0;
-                
+                document.getElementById('tracked-count').textContent = trackedData.total_tracked;
+
                 // Update map with aircraft
                 updateMapAircraft(aircraftData.aircraft);
-                
+
                 // Update aircraft table
                 const tbody = document.getElementById('aircraft-tbody');
                 tbody.classList.add('loading');
-                
+
                 if (aircraftData.aircraft.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="9" class="no-data">No aircraft in range</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="8" class="no-data">No aircraft in range</td></tr>';
                 } else {
                     tbody.innerHTML = aircraftData.aircraft.map(aircraft => `
-                        <tr>
-                            <td>${aircraft.hex}</td>
-                            <td>${formatFlight(aircraft.flight, aircraft.hex)}</td>
+                        <tr class="${aircraft.tracked ? 'tracked-aircraft' : ''}">
+                            <td>${aircraft.hex}${aircraft.tracked ? ' ⭐' : ''}</td>
+                            <td>${formatFlight(aircraft)}</td>
                             <td>${formatDistance(aircraft.distance)}</td>
                             <td>${formatAltitude(aircraft.alt_baro || aircraft.alt_geom)}</td>
                             <td>${formatSpeed(aircraft.gs)}</td>
                             <td>${aircraft.track || '--'}°</td>
                             <td>${aircraft.squawk || '--'}</td>
-                            <td>${formatAnalysis(aircraft.analysis)}</td>
                             <td>${aircraft.age}s</td>
                         </tr>
                     `).join('');
                 }
-                
-                // Update events
-                const eventsList = document.getElementById('events-list');
-                if (eventsData.events.length === 0) {
-                    eventsList.innerHTML = '<div class="no-data">No events detected yet</div>';
+
+                // Update tracked aircraft list
+                const trackedList = document.getElementById('tracked-list');
+                if (trackedData.tracked_aircraft.length === 0) {
+                    trackedList.innerHTML = '<div class="no-data">No tracked aircraft</div>';
                 } else {
-                    eventsList.innerHTML = eventsData.events.reverse().map(event => `
-                        <div class="event-item event-${event.type.toLowerCase()}">
-                            <div class="event-time">${formatTime(event.timestamp)}</div>
-                            <div class="event-description">${event.description}</div>
-                            <div class="event-aircraft">${event.aircraft.hex || 'Unknown'}</div>
+                    trackedList.innerHTML = trackedData.tracked_aircraft.slice(0, 20).map(ac => `
+                        <div class="tracked-item">
+                            <div class="tracked-icao">${ac.icao}</div>
+                            <div class="tracked-owner">${ac.owner}</div>
+                            <div class="tracked-model">${ac.tail_number} - ${ac.model}</div>
                         </div>
                     `).join('');
                 }
-                
+
+                // Update events
+                const eventsList = document.getElementById('events-list');
+                if (eventsData.events.length === 0) {
+                    eventsList.innerHTML = '<div class="no-data">No emergencies detected</div>';
+                } else {
+                    eventsList.innerHTML = eventsData.events.reverse().map(event => `
+                        <div class="event-item event-emergency">
+                            <div class="event-time">${formatTime(event.time)}</div>
+                            <div class="event-description">${event.type} - Squawk ${event.squawk}</div>
+                            <div class="event-aircraft">${event.hex}</div>
+                        </div>
+                    `).join('');
+                }
+
                 tbody.classList.remove('loading');
             }).catch(error => {
                 console.error('Error fetching data:', error);
-                document.getElementById('aircraft-tbody').innerHTML = 
-                    '<tr><td colspan="9" class="no-data">Error loading data</td></tr>';
+                document.getElementById('aircraft-tbody').innerHTML =
+                    '<tr><td colspan="8" class="no-data">Error loading data</td></tr>';
             });
         }
-        
+
         // Initialize map when page loads
         initMap();
-        
+
         // Initial load
         updateDashboard();
-        
-        // Update every 2 seconds
-        updateTimer = setInterval(updateDashboard, 2000);
-        
+
+        // Update every 5 seconds
+        updateTimer = setInterval(updateDashboard, 5000);
+
         // Clean up on page unload
         window.addEventListener('beforeunload', () => {
             if (updateTimer) clearInterval(updateTimer);

@@ -85,6 +85,21 @@ class EmailService:
             logging.error(f"Error sending email: {e}")
             return False
     
+    def send_html_email(self, recipients: List[str], subject: str,
+                        html_content: str) -> bool:
+        """
+        Convenience method to send HTML email
+
+        Args:
+            recipients: List of email addresses
+            subject: Email subject
+            html_content: HTML body content
+
+        Returns:
+            bool: True if successful, False otherwise
+        """
+        return self.send_email(recipients, subject, html_content)
+
     def send_aircraft_alert(self, aircraft: Dict, tracked_info: Dict,
                            distance: float, recipients: List[str]) -> bool:
         """Send aircraft detection alert"""
