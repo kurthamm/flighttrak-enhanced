@@ -14,6 +14,9 @@ from collections import deque, defaultdict
 import math
 import logging
 
+# Import configuration manager
+from config_manager import config
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -28,8 +31,7 @@ app = Flask(__name__)
 
 # Configuration
 PLANES_URL = "https://planes.hamm.me/data/aircraft.json"
-HOME_LAT = 34.1133171
-HOME_LON = -80.9024019
+HOME_LAT, HOME_LON = config.get_home_coordinates()
 UPDATE_INTERVAL = 2  # seconds
 
 # Data storage
