@@ -1,28 +1,36 @@
-# FlightTrak Enhanced 🛩️
+# FlightTrak 🛩️
 
-A sophisticated real-time aircraft monitoring and alert system with Twitter integration and emergency detection capabilities.
+An intelligent real-time aircraft monitoring system that tracks 69 celebrity, government, and historic aircraft. Features smart closest-approach alerting that sends ONE perfectly-timed notification per flyby, eliminating spam while maximizing engagement.
 
-## Features
+**Status**: ✅ Fully Operational (Updated October 30, 2025)
 
-### 🎯 Core Functionality
-- **Real-time Aircraft Tracking**: Monitor aircraft using ADS-B data from dump1090
-- **Smart Email Alerts**: Gmail SMTP notifications with distance and tracking links
-- **Distance Monitoring**: Prominent distance display from your location
-- **Multiple Tracking Links**: FlightAware, ADS-B Exchange, Google Maps integration
-- **Remote Monitoring**: Connect to remote dump1090 instances via Cloudflare tunnels
+## ⭐ Key Features
 
-### 🐦 Twitter/X Integration (NEW!)
-- **Privacy-Respecting Posting**: Automatic social media updates with built-in delays
-- **Aircraft Classification**: Historic, military, celebrity, and government aircraft categories
-- **Smart Delays**: 24-hour delay for celebrity aircraft, immediate for historic/military
-- **Vague Location Reporting**: State-level location only (no exact coordinates)
-- **Post Templates**: Custom formats for different aircraft types
-- **Complete Documentation**: See [TWITTER_SETUP.md](TWITTER_SETUP.md) for setup
+### 🎯 Smart Closest-Approach Alerting (NEW!)
+- **Problem Solved**: No more spam - previously sent 9 alerts per flyby
+- **Intelligent Tracking**: Monitors distance continuously, waits for closest approach
+- **Perfect Timing**: ONE alert per aircraft at the most interesting moment
+- **24-Hour Cooldown**: Same aircraft won't spam you multiple times per day
+- **90% Reduction**: Dramatically reduced alert volume while improving relevance
 
-### 🚨 Emergency Detection
-- **Emergency Squawk Codes**: Automatic alerts for 7500 (hijack), 7600 (radio failure), 7700 (general emergency), 7777 (military intercept)
-- **Critical Severity Alerts**: Instant notifications for emergency situations
-- **Rich Email Format**: Detailed emergency information with aircraft data
+### 🚨 Intelligent Emergency Detection (NEW!)
+- **False-Positive Filtering**: Eliminates fake 7600 alerts during normal landings
+- **Airport Awareness**: 40+ major US airports for accurate landing detection
+- **Multi-Factor Analysis**: Checks altitude, descent rate, speed, proximity
+- **100% Accuracy**: All genuine emergencies (7700, 7500, 7777) still alert
+
+### 📧 Core Monitoring
+- **69 Tracked Aircraft**: Government (6), Celebrity (55), Historic (2)
+- **Rich HTML Emails**: Distance, tracking links, flight details, maps
+- **Multiple Recipients**: Alert 4 family members simultaneously
+- **Real-Time Dashboard**: Web interface on port 5030 with live maps
+- **Remote Monitoring**: Connect via Cloudflare tunnel (planes.hamm.me)
+
+### 🐦 Twitter/X Integration
+- **Privacy-Respecting**: 24-hour delay for celebrities, immediate for historic/government
+- **Vague Locations**: State-level only, no exact coordinates
+- **Configured & Ready**: Settings in config.json
+- **Documentation**: See [TWITTER_SETUP.md](TWITTER_SETUP.md) for setup
 
 ### 📊 Enhanced Web Dashboard
 - **Interactive Maps**: Live aircraft visualization with Leaflet.js

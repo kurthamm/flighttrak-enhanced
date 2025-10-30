@@ -74,9 +74,12 @@ class FlightMonitor:
             'rapid_changes': 0
         })
         
-        # Alert deduplication
-        self.recent_alerts = set()
-        self.alert_cooldown = 300  # 5 minutes
+        # Smart alert system - track closest approach
+        self.tracked_flybys = {}  # Track aircraft approaching/departing
+        # Structure: {icao: {'first_seen': time, 'distances': [d1, d2, ...], 'closest_data': {...}, 'last_update': time}}
+        self.recent_alerts = {}  # Track when we last alerted (for 24hr cooldown)
+        self.alert_cooldown = 86400  # 24 hours between alerts for same aircraft
+        self.flyby_timeout = 1800  # 30 minutes max tracking time before forcing alert
 
         # Health monitoring
         self.last_aircraft_seen = time.time()  # Track when we last saw ANY aircraft
@@ -160,46 +163,135 @@ class FlightMonitor:
             return []
     
     def _check_tracked_aircraft(self, aircraft_list: List[Dict]) -> None:
-        """Check for tracked aircraft and send alerts"""
+        """Check for tracked aircraft with smart closest-approach alerting"""
         if not config.is_alert_enabled('tracked_aircraft'):
             return
-        
+
+        current_time = time.time()
+        visible_tracked = set()  # Track which aircraft we see in this update
+
+        # Process all visible tracked aircraft
         for aircraft in aircraft_list:
             icao = aircraft.get('hex', '').upper()
-            
-            if icao in self.tracked_aircraft:
-                # Check if we've already alerted on this aircraft recently
-                alert_key = f"tracked_{icao}"
-                if alert_key in self.recent_alerts:
+
+            if icao not in self.tracked_aircraft:
+                continue
+
+            visible_tracked.add(icao)
+
+            # Check 24-hour cooldown
+            alert_key = f"tracked_{icao}"
+            if alert_key in self.recent_alerts:
+                if current_time - self.recent_alerts[alert_key] < self.alert_cooldown:
                     continue
-                
-                # Calculate distance
-                distance = get_aircraft_distance(aircraft, self.home_lat, self.home_lon)
-                if distance is None:
-                    continue
-                
-                # Send alert
-                tracked_info = self.tracked_aircraft[icao]
-                recipients = config.get_alert_recipients('tracked_aircraft')
 
-                if recipients:
-                    # Send email alert
-                    success = self.email_service.send_aircraft_alert(
-                        aircraft, tracked_info, distance, recipients
-                    )
+            # Calculate distance
+            distance = get_aircraft_distance(aircraft, self.home_lat, self.home_lon)
+            if distance is None:
+                continue
 
-                    if success:
-                        self.recent_alerts.add(alert_key)
-                        self.detected_aircraft.add(icao)
+            # Initialize or update flyby tracking
+            if icao not in self.tracked_flybys:
+                # First detection - start tracking
+                self.tracked_flybys[icao] = {
+                    'first_seen': current_time,
+                    'distances': [distance],
+                    'closest_distance': distance,
+                    'closest_data': {'aircraft': aircraft, 'distance': distance},
+                    'last_update': current_time
+                }
+                logging.info(f"Started tracking {icao} at {distance:.1f} miles")
+            else:
+                # Update existing tracking
+                flyby = self.tracked_flybys[icao]
+                flyby['distances'].append(distance)
+                flyby['last_update'] = current_time
 
-                        # Log detection
-                        self._log_aircraft_detection(aircraft, tracked_info, distance)
+                # Update closest point if this is closer
+                if distance < flyby['closest_distance']:
+                    flyby['closest_distance'] = distance
+                    flyby['closest_data'] = {'aircraft': aircraft, 'distance': distance}
+                    logging.debug(f"New closest point for {icao}: {distance:.1f} miles")
 
-                        logging.info(f"Tracked aircraft alert sent: {icao} ({tracked_info.get('description', 'Unknown')}) at {distance:.1f} miles")
+        # Check for aircraft that have left visibility or need alerts
+        for icao in list(self.tracked_flybys.keys()):
+            flyby = self.tracked_flybys[icao]
 
-                        # Queue for Twitter posting (if enabled)
-                        if self.twitter_poster:
-                            self.twitter_poster.queue_post(aircraft, tracked_info, distance)
+            # Check if aircraft is still visible
+            if icao in visible_tracked:
+                # Still visible - check if we should alert due to timeout
+                tracking_duration = current_time - flyby['first_seen']
+                if tracking_duration > self.flyby_timeout:
+                    # Timeout - send alert for closest point
+                    logging.info(f"Flyby timeout for {icao}, sending alert at closest point: {flyby['closest_distance']:.1f} miles")
+                    self._send_aircraft_alert(icao, flyby['closest_data'])
+                    del self.tracked_flybys[icao]
+                continue
+
+            # Aircraft no longer visible - check if we should alert
+            # Need at least 2 distance measurements to determine trend
+            if len(flyby['distances']) < 2:
+                # Only one measurement, send alert immediately
+                logging.info(f"{icao} disappeared after 1 measurement, sending alert")
+                self._send_aircraft_alert(icao, flyby['closest_data'])
+                del self.tracked_flybys[icao]
+                continue
+
+            # Check if aircraft was approaching (getting closer) before disappearing
+            # Compare first distance to closest distance
+            was_approaching = flyby['distances'][0] > flyby['closest_distance']
+
+            # Also check last few measurements to see if it was departing
+            recent_distances = flyby['distances'][-3:]  # Last 3 measurements
+            if len(recent_distances) >= 2:
+                # If distance was increasing in recent measurements, it was departing
+                was_departing = recent_distances[-1] > recent_distances[0]
+            else:
+                was_departing = False
+
+            if was_approaching or was_departing:
+                # Aircraft came closer then left, OR was moving away - send alert at closest point
+                reason = "approached and departed" if was_approaching and was_departing else \
+                         "approached" if was_approaching else "moved away"
+                logging.info(f"{icao} {reason}, sending alert at closest point: {flyby['closest_distance']:.1f} miles")
+                self._send_aircraft_alert(icao, flyby['closest_data'])
+            else:
+                # Aircraft stayed at similar distance then disappeared - still send alert
+                logging.info(f"{icao} disappeared, sending alert at closest point: {flyby['closest_distance']:.1f} miles")
+                self._send_aircraft_alert(icao, flyby['closest_data'])
+
+            # Clean up
+            del self.tracked_flybys[icao]
+
+    def _send_aircraft_alert(self, icao: str, closest_data: Dict) -> None:
+        """Send alert for a tracked aircraft at its closest approach point"""
+        aircraft = closest_data['aircraft']
+        distance = closest_data['distance']
+        tracked_info = self.tracked_aircraft[icao]
+        recipients = config.get_alert_recipients('tracked_aircraft')
+
+        if not recipients:
+            return
+
+        # Send email alert
+        success = self.email_service.send_aircraft_alert(
+            aircraft, tracked_info, distance, recipients
+        )
+
+        if success:
+            current_time = time.time()
+            alert_key = f"tracked_{icao}"
+            self.recent_alerts[alert_key] = current_time
+            self.detected_aircraft.add(icao)
+
+            # Log detection
+            self._log_aircraft_detection(aircraft, tracked_info, distance)
+
+            logging.info(f"Tracked aircraft alert sent: {icao} ({tracked_info.get('description', 'Unknown')}) at closest approach: {distance:.1f} miles")
+
+            # Queue for Twitter posting (if enabled)
+            if self.twitter_poster:
+                self.twitter_poster.queue_post(aircraft, tracked_info, distance)
     
     def _check_anomalies(self, aircraft_list: List[Dict]) -> None:
         """Check for aircraft anomalies"""
@@ -215,9 +307,12 @@ class FlightMonitor:
                     icao = aircraft.get('hex', '').upper()
                     anomaly_type = anomaly.get('type', 'unknown')
                     alert_key = f"anomaly_{icao}_{anomaly_type}"
-                    
+                    current_time = time.time()
+
                     if alert_key in self.recent_alerts:
-                        continue
+                        # Check if cooldown period has passed
+                        if current_time - self.recent_alerts[alert_key] < self.alert_cooldown:
+                            continue
                     
                     # Rate limiting checks
                     current_time = time.time()
@@ -246,7 +341,7 @@ class FlightMonitor:
                         success = self.email_service.send_anomaly_alert(anomaly, recipients)
 
                         if success:
-                            self.recent_alerts.add(alert_key)
+                            self.recent_alerts[alert_key] = current_time  # Store timestamp
                             self.anomaly_alert_times[alert_key] = current_time
                             self.anomaly_alert_counts[icao][current_hour] += 1
 
@@ -351,7 +446,7 @@ class FlightMonitor:
                 'lon': aircraft.get('lon', 'N/A')
             }
 
-            emergency_file = Path('emergency_events.json')
+            emergency_file = 'emergency_events.json'
             with open(emergency_file, 'a') as f:
                 f.write(json.dumps(log_entry) + '\n')
 
@@ -363,12 +458,18 @@ class FlightMonitor:
     def _cleanup_old_alerts(self) -> None:
         """Clean up old alert keys to prevent memory buildup"""
         current_time = time.time()
-        
+
         # Remove alerts older than cooldown period
-        # This is a simplified cleanup - in production you'd want timestamped keys
-        if len(self.recent_alerts) > 1000:  # Prevent unlimited growth
-            self.recent_alerts.clear()
-            logging.info("Cleared old alert keys")
+        expired_keys = [
+            key for key, timestamp in self.recent_alerts.items()
+            if current_time - timestamp > self.alert_cooldown
+        ]
+
+        for key in expired_keys:
+            del self.recent_alerts[key]
+
+        if expired_keys:
+            logging.debug(f"Cleaned up {len(expired_keys)} expired alert keys")
     
     def _run_diagnostics(self) -> Dict[str, Any]:
         """Run system diagnostics to identify specific problems"""

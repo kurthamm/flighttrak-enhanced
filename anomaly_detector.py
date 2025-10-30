@@ -33,13 +33,53 @@ class FlightAnomalyDetector:
             'anomaly_count': 0
         })
         
-        # Airport proximity data (example airports - expand as needed)
+        # Airport proximity data (major US airports for false positive filtering)
         self.airports = [
+            # Northeast
             {'icao': 'KJFK', 'lat': 40.6413, 'lon': -73.7781, 'name': 'JFK International'},
             {'icao': 'KLGA', 'lat': 40.7769, 'lon': -73.8740, 'name': 'LaGuardia'},
             {'icao': 'KEWR', 'lat': 40.6895, 'lon': -74.1745, 'name': 'Newark Liberty'},
             {'icao': 'KBOS', 'lat': 42.3656, 'lon': -71.0096, 'name': 'Boston Logan'},
+            {'icao': 'KBDL', 'lat': 41.9389, 'lon': -72.6832, 'name': 'Bradley International'},
+            {'icao': 'KPVD', 'lat': 41.7240, 'lon': -71.4281, 'name': 'Providence'},
+            {'icao': 'KPHL', 'lat': 39.8719, 'lon': -75.2411, 'name': 'Philadelphia International'},
+            {'icao': 'KBWI', 'lat': 39.1754, 'lon': -76.6683, 'name': 'Baltimore/Washington'},
+            # Southeast
             {'icao': 'KDCA', 'lat': 38.8512, 'lon': -77.0402, 'name': 'Reagan National'},
+            {'icao': 'KIAD', 'lat': 38.9445, 'lon': -77.4558, 'name': 'Dulles International'},
+            {'icao': 'KATL', 'lat': 33.6367, 'lon': -84.4281, 'name': 'Atlanta Hartsfield'},
+            {'icao': 'KCLT', 'lat': 35.2140, 'lon': -80.9431, 'name': 'Charlotte Douglas'},
+            {'icao': 'KMCO', 'lat': 28.4294, 'lon': -81.3089, 'name': 'Orlando International'},
+            {'icao': 'KMIA', 'lat': 25.7959, 'lon': -80.2870, 'name': 'Miami International'},
+            {'icao': 'KFLL', 'lat': 26.0726, 'lon': -80.1527, 'name': 'Fort Lauderdale'},
+            {'icao': 'KTPA', 'lat': 27.9755, 'lon': -82.5332, 'name': 'Tampa International'},
+            # Midwest
+            {'icao': 'KORD', 'lat': 41.9742, 'lon': -87.9073, 'name': "Chicago O'Hare"},
+            {'icao': 'KMDW', 'lat': 41.7868, 'lon': -87.7522, 'name': 'Chicago Midway'},
+            {'icao': 'KDTW', 'lat': 42.2124, 'lon': -83.3534, 'name': 'Detroit Metro'},
+            {'icao': 'KMSP', 'lat': 44.8848, 'lon': -93.2223, 'name': 'Minneapolis-St. Paul'},
+            {'icao': 'KSTL', 'lat': 38.7487, 'lon': -90.3700, 'name': 'St. Louis Lambert'},
+            {'icao': 'KCVG', 'lat': 39.0488, 'lon': -84.6678, 'name': 'Cincinnati'},
+            {'icao': 'KCLE', 'lat': 41.4117, 'lon': -81.8498, 'name': 'Cleveland Hopkins'},
+            # Southwest
+            {'icao': 'KDFW', 'lat': 32.8998, 'lon': -97.0403, 'name': 'Dallas/Fort Worth'},
+            {'icao': 'KDAL', 'lat': 32.8471, 'lon': -96.8518, 'name': 'Dallas Love Field'},
+            {'icao': 'KIAH', 'lat': 29.9844, 'lon': -95.3414, 'name': 'Houston Intercontinental'},
+            {'icao': 'KHOU', 'lat': 29.6454, 'lon': -95.2789, 'name': 'Houston Hobby'},
+            {'icao': 'KAUS', 'lat': 30.1945, 'lon': -97.6699, 'name': 'Austin-Bergstrom'},
+            {'icao': 'KSAT', 'lat': 29.5337, 'lon': -98.4698, 'name': 'San Antonio'},
+            {'icao': 'KPHX', 'lat': 33.4342, 'lon': -112.0080, 'name': 'Phoenix Sky Harbor'},
+            # West
+            {'icao': 'KLAX', 'lat': 33.9416, 'lon': -118.4085, 'name': 'Los Angeles International'},
+            {'icao': 'KSAN', 'lat': 32.7336, 'lon': -117.1897, 'name': 'San Diego International'},
+            {'icao': 'KSFO', 'lat': 37.6213, 'lon': -122.3790, 'name': 'San Francisco International'},
+            {'icao': 'KOAK', 'lat': 37.7213, 'lon': -122.2208, 'name': 'Oakland International'},
+            {'icao': 'KSJC', 'lat': 37.3626, 'lon': -121.9290, 'name': 'San Jose International'},
+            {'icao': 'KSEA', 'lat': 47.4502, 'lon': -122.3088, 'name': 'Seattle-Tacoma'},
+            {'icao': 'KPDX', 'lat': 45.5887, 'lon': -122.5975, 'name': 'Portland International'},
+            {'icao': 'KLAS', 'lat': 36.0840, 'lon': -115.1537, 'name': 'Las Vegas McCarran'},
+            {'icao': 'KDEN', 'lat': 39.8561, 'lon': -104.6737, 'name': 'Denver International'},
+            {'icao': 'KSLC', 'lat': 40.7899, 'lon': -111.9791, 'name': 'Salt Lake City'},
         ]
         
         # Military bases and restricted areas
@@ -131,29 +171,100 @@ class FlightAnomalyDetector:
             history['squawks'].add(aircraft['squawk'])
 
     def _detect_emergency_squawks(self, aircraft):
-        """Detect emergency squawk codes only"""
+        """Detect emergency squawk codes with false positive filtering"""
         anomalies = []
 
         # Emergency squawk codes
         squawk = aircraft.get('squawk')
-        if squawk:
-            emergency_codes = {
-                '7500': 'HIJACK ALERT - Aircraft has been hijacked',
-                '7600': 'RADIO FAILURE - Lost radio contact with ATC',
-                '7700': 'GENERAL EMERGENCY - Aircraft declaring emergency',
-                '7777': 'MILITARY INTERCEPT - Military interception in progress'
-            }
-            if squawk in emergency_codes:
-                anomalies.append({
-                    'type': 'EMERGENCY_SQUAWK',
-                    'severity': 'CRITICAL',
-                    'description': emergency_codes[squawk],
-                    'squawk_code': squawk,
-                    'aircraft': aircraft,
-                    'timestamp': time.time()
-                })
+        if not squawk:
+            return anomalies
+
+        emergency_codes = {
+            '7500': 'HIJACK ALERT - Aircraft has been hijacked',
+            '7600': 'RADIO FAILURE - Lost radio contact with ATC',
+            '7700': 'GENERAL EMERGENCY - Aircraft declaring emergency',
+            '7777': 'MILITARY INTERCEPT - Military interception in progress'
+        }
+
+        if squawk not in emergency_codes:
+            return anomalies
+
+        # Check if this is likely a false positive (landing approach)
+        if self._is_likely_landing_false_positive(aircraft, squawk):
+            logging.debug(f"Filtered false positive {squawk} for {aircraft.get('hex', 'unknown')} - likely landing approach")
+            return anomalies
+
+        # Genuine emergency detected
+        anomalies.append({
+            'type': 'EMERGENCY_SQUAWK',
+            'severity': 'CRITICAL',
+            'description': emergency_codes[squawk],
+            'squawk_code': squawk,
+            'aircraft': aircraft,
+            'timestamp': time.time()
+        })
 
         return anomalies
+
+    def _is_likely_landing_false_positive(self, aircraft, squawk):
+        """
+        Determine if emergency squawk is likely a false positive from landing/approach.
+
+        False positives typically occur when:
+        1. Aircraft is descending (negative vertical rate)
+        2. Aircraft is at low altitude (< 10,000 ft)
+        3. Aircraft is near a known airport
+        4. Squawk is 7600 (radio failure) - most common false positive
+        5. Aircraft speed is consistent with approach (100-250 knots)
+        """
+
+        # 7600 (radio failure) is the most common false positive during approach
+        # Only filter 7600, let other emergency codes through
+        if squawk != '7600':
+            return False
+
+        # Check vertical rate (descending)
+        baro_rate = aircraft.get('baro_rate')
+        if baro_rate is None or baro_rate >= 0:
+            # Not descending or no data - could be genuine emergency
+            return False
+
+        # Check altitude (typical approach altitude)
+        altitude = aircraft.get('alt_baro')
+        if altitude is None or altitude > 10000:
+            # High altitude - less likely to be approach
+            return False
+
+        # Check speed (approach speeds typically 100-250 knots)
+        speed = aircraft.get('gs')
+        if speed is not None and (speed < 80 or speed > 300):
+            # Outside normal approach speed range
+            return False
+
+        # Check if near an airport
+        lat = aircraft.get('lat')
+        lon = aircraft.get('lon')
+        if lat is not None and lon is not None:
+            if self._is_near_airport(lat, lon, radius_miles=15):
+                # Aircraft is:
+                # - Descending
+                # - At low altitude (< 10,000 ft)
+                # - Near an airport
+                # - Squawking 7600
+                # - At reasonable approach speed
+                # This is almost certainly a false positive
+                logging.info(f"7600 squawk filtered as false positive: {aircraft.get('hex', 'unknown')} - "
+                           f"alt={altitude}ft, vrate={baro_rate}fpm, speed={speed}kt, near airport")
+                return True
+
+        # If we can't determine location but other factors suggest landing, be conservative
+        if altitude < 5000 and baro_rate < -500:
+            # Very low altitude and descending - likely landing
+            logging.info(f"7600 squawk filtered as false positive: {aircraft.get('hex', 'unknown')} - "
+                       f"alt={altitude}ft, vrate={baro_rate}fpm (no location data, assuming approach)")
+            return True
+
+        return False
 
     def _detect_unusual_flight_behavior(self, aircraft, history):
         """Detect unusual flight patterns"""
