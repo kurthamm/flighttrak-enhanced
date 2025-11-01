@@ -243,16 +243,85 @@ class FAAAircraftDiscovery:
         logging.info(f"Found {len(rare_birds)} rare warbirds")
         return rare_birds
     
+    def add_aircraft_to_tracking(self, new_celebs: List[Dict], rare_birds: List[Dict]) -> int:
+        """
+        Automatically add discovered aircraft to aircraft_list.json
+        Returns number of aircraft added
+        """
+        if not new_celebs and not rare_birds:
+            logging.info("No new aircraft to add")
+            return 0
+
+        try:
+            # Load existing aircraft list
+            with open(AIRCRAFT_LIST_FILE, 'r') as f:
+                data = json.load(f)
+
+            aircraft_to_add = []
+
+            # Process celebrity jets
+            for celeb in new_celebs:
+                aircraft_entry = {
+                    "icao": celeb['icao'].upper(),
+                    "tail_number": celeb['tail'],
+                    "model": celeb['model'].title(),
+                    "owner": celeb['name'],
+                    "description": f"{celeb['name']}'s private jet - {celeb.get('notes', 'Celebrity aircraft')}"
+                }
+                aircraft_to_add.append(aircraft_entry)
+
+            # Process rare warbirds with detailed descriptions
+            warbird_descriptions = {
+                'B-17': 'WWII-era Boeing B-17 Flying Fortress heavy bomber - One of approximately 12-15 airworthy examples remaining worldwide',
+                'B-29': 'WWII-era Boeing B-29 Superfortress heavy bomber - Extremely rare, only 2 flying examples exist',
+                'B-24': 'WWII-era Consolidated B-24 Liberator heavy bomber - Very rare warbird, few airworthy examples remain'
+            }
+
+            for bird in rare_birds:
+                # Create detailed description
+                base_desc = warbird_descriptions.get(bird['type'], f"Rare {bird['type']} warbird")
+                description = f"{base_desc}. Currently owned by {bird['owner']}"
+
+                aircraft_entry = {
+                    "icao": bird['icao'].upper(),
+                    "tail_number": bird['tail'],
+                    "model": bird['model'].title(),
+                    "owner": bird['owner'].title(),
+                    "description": description
+                }
+                aircraft_to_add.append(aircraft_entry)
+
+            # Add new aircraft to the list
+            data['aircraft_to_detect'].extend(aircraft_to_add)
+
+            # Save updated aircraft list with proper formatting
+            with open(AIRCRAFT_LIST_FILE, 'w') as f:
+                json.dump(data, f, indent=4)
+
+            logging.info("")
+            logging.info("="*80)
+            logging.info(f"✓ ADDED {len(aircraft_to_add)} NEW AIRCRAFT TO TRACKING LIST")
+            logging.info("="*80)
+
+            for aircraft in aircraft_to_add:
+                logging.info(f"  + {aircraft['tail_number']} - {aircraft['owner']} ({aircraft['model']})")
+
+            return len(aircraft_to_add)
+
+        except Exception as e:
+            logging.error(f"✗ Error adding aircraft to tracking list: {e}")
+            return 0
+
     def generate_discovery_report(self, new_celebs: List[Dict], rare_birds: List[Dict]) -> None:
         """Generate comprehensive discovery report"""
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         report_file = DOWNLOAD_DIR / f"faa_discovery_report_{timestamp}.txt"
-        
+
         with open(report_file, 'w') as f:
             f.write("="*80 + "\n")
             f.write(f"FAA Aircraft Discovery Report - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
             f.write("="*80 + "\n\n")
-            
+
             # Celebrity jets section
             if new_celebs:
                 f.write(f"NEW CELEBRITY/FAMOUS AIRCRAFT DISCOVERED ({len(new_celebs)}):\n")
@@ -268,7 +337,7 @@ class FAAAircraftDiscovery:
                     f.write("\n")
             else:
                 f.write("NO NEW CELEBRITY AIRCRAFT DISCOVERED\n\n")
-            
+
             # Rare warbirds section
             if rare_birds:
                 f.write(f"\nRARE WARBIRDS DISCOVERED ({len(rare_birds)}):\n")
@@ -279,11 +348,11 @@ class FAAAircraftDiscovery:
                     f.write(f"  Owner: {bird['owner']}\n\n")
             else:
                 f.write("\nNO NEW RARE WARBIRDS DISCOVERED\n")
-            
+
             f.write("\n" + "="*80 + "\n")
             f.write(f"SUMMARY: {len(new_celebs)} celebrity jets + {len(rare_birds)} warbirds\n")
             f.write("="*80 + "\n")
-        
+
         logging.info(f"✓ Discovery report saved to {report_file}")
     
     def cleanup(self) -> None:
@@ -299,42 +368,46 @@ class FAAAircraftDiscovery:
         logging.info("\n" + "="*80)
         logging.info("FAA AIRCRAFT DISCOVERY SERVICE")
         logging.info("="*80)
-        
+
         # Step 1: Download FAA database
         if not self.download_faa_database():
             logging.error("Failed to download FAA database - aborting")
             return
-        
+
         if not self.extract_faa_files():
             logging.error("Failed to extract database - aborting")
             return
-        
+
         if not self.load_faa_database():
             logging.error("Failed to load database - aborting")
             return
-        
+
         # Load existing aircraft
         self.load_existing_aircraft()
-        
+
         # Step 2: Web search for celebrity jets
         celebrity_jets = self.web_search_celebrity_jets()
-        
+
         # Step 3: Look up new celebrity jets
         new_celebs = self.lookup_new_celebrity_jets(celebrity_jets)
-        
+
         # Step 4: Find rare warbirds
         rare_birds = self.find_rare_warbirds()
-        
-        # Generate report
+
+        # Step 5: Generate report
         self.generate_discovery_report(new_celebs, rare_birds)
-        
+
+        # Step 6: AUTOMATICALLY ADD discovered aircraft to tracking list
+        added_count = self.add_aircraft_to_tracking(new_celebs, rare_birds)
+
         # Cleanup
         self.cleanup()
-        
+
         logging.info("")
         logging.info("="*80)
         logging.info("DISCOVERY COMPLETE")
         logging.info(f"Found: {len(new_celebs)} new celebrity jets + {len(rare_birds)} rare warbirds")
+        logging.info(f"Added: {added_count} aircraft to tracking list")
         logging.info("="*80)
 
 

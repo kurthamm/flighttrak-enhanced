@@ -748,6 +748,48 @@
             "model": "Cessna 150G",
             "owner": "Logan Paul",
             "description": "YouTuber/boxer - Small personal aircraft, frequently posts about flying"
+        },
+        {
+            "icao": "A35C59",
+            "tail_number": "N3154S",
+            "model": "Boeing B-17G",
+            "owner": "Champaign Aviation Museum",
+            "description": "WWII-era Boeing B-17 Flying Fortress heavy bomber - One of approximately 12-15 airworthy examples remaining worldwide. Currently owned by CHAMPAIGN AVIATION MUSEUM"
+        },
+        {
+            "icao": "A43A4A",
+            "tail_number": "N3713G",
+            "model": "Boeing B-17G",
+            "owner": "Plane Of Fame Air Museum",
+            "description": "WWII-era Boeing B-17 Flying Fortress heavy bomber - One of approximately 12-15 airworthy examples remaining worldwide. Currently owned by PLANE OF FAME AIR MUSEUM"
+        },
+        {
+            "icao": "A4847A",
+            "tail_number": "N390TH",
+            "model": "Boeing B-17G",
+            "owner": "Liberty Foundation Inc",
+            "description": "WWII-era Boeing B-17 Flying Fortress heavy bomber - One of approximately 12-15 airworthy examples remaining worldwide. Currently owned by LIBERTY FOUNDATION INC"
+        },
+        {
+            "icao": "AB6DA9",
+            "tail_number": "N83525",
+            "model": "Boeing B-17G",
+            "owner": "Worlds Greatest Aircraft Collection Inc",
+            "description": "WWII-era Boeing B-17 Flying Fortress heavy bomber - One of approximately 12-15 airworthy examples remaining worldwide. Currently owned by WORLDS GREATEST AIRCRAFT COLLECTION INC"
+        },
+        {
+            "icao": "AC70B8",
+            "tail_number": "N900RW",
+            "model": "Boeing B-17G",
+            "owner": "Mid America Flight Museum Inc",
+            "description": "WWII-era Boeing B-17 Flying Fortress heavy bomber - One of approximately 12-15 airworthy examples remaining worldwide. Currently owned by MID AMERICA FLIGHT MUSEUM INC"
+        },
+        {
+            "icao": "ACEFF0",
+            "tail_number": "N9323Z",
+            "model": "Boeing B-17G",
+            "owner": "American Airpower Heritage Fly Museu",
+            "description": "WWII-era Boeing B-17 Flying Fortress heavy bomber - One of approximately 12-15 airworthy examples remaining worldwide. Currently owned by AMERICAN AIRPOWER HERITAGE FLY MUSEU"
         }
     ]
 }
