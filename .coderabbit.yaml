@@ -3,48 +3,87 @@ reviews:
   path_instructions:
     - path: "**/*.py"
       instructions: |
-        FOCUS ON CODE CONSOLIDATION AND ARCHITECTURE SIMPLIFICATION
+        # FlightTrak - Real-time Aircraft Monitoring System
 
-        Current Structure Analysis:
-        - flight_monitor.py (33K) - Main tracking service
-        - enhanced_dashboard.py (12K) - Flask web dashboard
-        - config_manager.py (11K) - Configuration management
-        - email_service.py (49K) - Gmail SMTP alerts
-        - utils.py (11K) - Shared utilities
-        - anomaly_detector.py (27K) - Emergency detection (ONLY imported by flight_monitor.py)
-        - flightaware_lookup.py (4.8K) - FlightAware API (ONLY imported by email_service.py)
-        - twitter_poster.py (13K) - Twitter posting (ONLY imported by flight_monitor.py)
-        - weekly_report.py (19K) - Weekly reports (NOT imported anywhere - standalone script)
+        ## Project Context
+        FlightTrak monitors 69 specific aircraft (celebrities, government, historic planes) using ADS-B data.
+        Key features:
+        - Smart closest-approach alerting (ONE alert per flyby)
+        - Intelligent emergency squawk detection (7500/7600/7700/7777)
+        - Enhanced HTML email alerts with FlightAware integration
+        - Real-time web dashboard
+        - Twitter/X posting with privacy delays
 
-        SPECIFIC REVIEW QUESTIONS:
+        ## Current Architecture (7 Core Files)
+        - flight_monitor.py (33K) - Main tracking service, polls every 15 seconds
+        - enhanced_dashboard.py (12K) - Flask web dashboard on port 5030
+        - config_manager.py (11K) - Configuration with environment variable overrides
+        - email_service.py (54K) - Gmail SMTP alerts + FlightAware API integration
+        - anomaly_detector.py (27K) - Emergency detection with false-positive filtering
+        - twitter_poster.py (13K) - Social media posting
+        - utils.py (11K) - Shared utilities (haversine distance, formatting)
 
-        1. FILE CONSOLIDATION OPPORTUNITIES
-           - Should anomaly_detector.py (only used by flight_monitor.py) be merged into flight_monitor.py?
-           - Should flightaware_lookup.py (only used by email_service.py) be merged into email_service.py?
-           - Should twitter_poster.py (only used by flight_monitor.py) be merged into flight_monitor.py?
-           - Should weekly_report.py move to scripts/ directory since it's a standalone script?
+        ## Code Review Focus Areas
 
-        2. CODE DUPLICATION
-           - Are there duplicated functions, patterns, or logic across these files?
-           - Can any shared code be extracted to utils.py?
+        ### 1. EXCEPTION HANDLING
+        - NEVER use bare `except:` statements (catches KeyboardInterrupt/SystemExit)
+        - Use specific exception types: (ValueError, AttributeError, KeyError), etc.
+        - Emergency detection (7500/7700/7777) must NEVER be silently caught
+        - API timeouts should be handled explicitly (requests.exceptions.Timeout)
 
-        3. ARCHITECTURAL SIMPLIFICATION
-           - For a 4,311 line application, is 9 core files appropriate or over-engineered?
-           - What is the optimal file structure? 5 files? 7 files? Keep 9?
-           - Would consolidation improve or harm maintainability?
+        ### 2. SECURITY & SAFETY
+        - No hardcoded API keys, passwords, or secrets in code
+        - No `debug=True` in Flask production code
+        - Emergency squawk codes (7500/7700/7777) must always trigger alerts
+        - Validate all external data (ADS-B JSON, FlightAware API responses)
+        - SQL injection prevention (we don't use SQL, but flag if introduced)
 
-        4. MODULE COHESION
-           - Do any modules have low cohesion (unrelated functions grouped together)?
-           - Are there tight couplings that suggest files should be merged?
+        ### 3. AVIATION DOMAIN LOGIC
+        - Emergency codes: 7500 (hijack), 7600 (radio failure), 7700 (emergency), 7777 (military intercept)
+        - 7600 filtering: Only filter during landing approach (altitude, descent rate, airport proximity)
+        - Distance calculations: Use haversine formula for lat/lon → miles
+        - ICAO hex codes: Must be uppercase (A6F2B7 not a6f2b7)
+        - Altitude in feet, speed in knots, distance in miles (aviation standard)
 
-        5. IMPORT COMPLEXITY
-           - Any circular dependencies or overly complex import chains?
-           - Would merging reduce import complexity?
+        ### 4. PERFORMANCE & EFFICIENCY
+        - Polling interval: 15 seconds for planes.hamm.me (don't reduce, avoid spam)
+        - Alert cooldowns: 24-hour minimum between alerts for same aircraft
+        - Email rate limiting: Don't send duplicate alerts within short timeframes
+        - API timeouts: FlightAware requests should timeout after 10 seconds
+        - Avoid N+1 queries if database operations are added
 
-        PROVIDE SPECIFIC, ACTIONABLE RECOMMENDATIONS:
-        - Identify exact files to merge (if any)
-        - Explain the benefits and risks of each consolidation
-        - Suggest final file structure with line counts
-        - Note any code that should be extracted or reorganized
+        ### 5. CODE QUALITY
+        - Type hints preferred for function signatures
+        - Logging: Use appropriate levels (debug/info/warning/error)
+        - No code duplication: Extract to utils.py if used in 2+ places
+        - Function length: Flag functions >100 lines for potential refactoring
+        - Clear variable names: No single-letter variables except loop counters
 
-        GOAL: Simplify the codebase to the minimum reasonable number of files while maintaining readability and separation of concerns appropriate for this application size.
+        ### 6. DATA VALIDATION
+        - Validate aircraft_list.json structure on load
+        - Check for required fields in ADS-B data (hex, lat, lon, altitude)
+        - Validate email recipients are non-empty before sending
+        - FlightAware API responses should check status codes
+
+        ### 7. TESTING & RELIABILITY
+        - Flag missing error handling in critical paths
+        - Ensure services can recover from API failures gracefully
+        - Configuration should have sensible defaults
+        - Flag any operations that could cause infinite loops
+
+        ### 8. MAINTAINABILITY
+        - Keep current 7-file structure (don't suggest consolidation unless critical)
+        - Comments for complex domain logic (emergency filtering, distance tracking)
+        - Document any "magic numbers" (why 10,000 ft? why 15 miles?)
+        - Clear separation: scripts/ vs tests/ vs core modules
+
+        ## What NOT to Flag
+        - Single-use imports (anomaly_detector only used by flight_monitor - intentional)
+        - File size (email_service.py is 54K - acceptable, includes FlightAware API)
+        - Global instances (_flightaware_lookup singleton pattern - intentional)
+        - 15-second polling interval (designed for this data source)
+
+        ## Priority Levels
+        HIGH: Security issues, emergency detection bugs, exception handling flaws
+        MEDIUM: Performance issues, code duplication, missing validation
+        LOW: Style improvements, minor refactoring suggestions
