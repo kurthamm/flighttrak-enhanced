@@ -179,6 +179,9 @@ class FlightMonitor:
 
             visible_tracked.add(icao)
 
+            # Get tracked aircraft info
+            tracked_info = self.tracked_aircraft[icao]
+
             # Check 24-hour cooldown
             alert_key = f"tracked_{icao}"
             if alert_key in self.recent_alerts:
@@ -200,7 +203,7 @@ class FlightMonitor:
                     'closest_data': {'aircraft': aircraft, 'distance': distance},
                     'last_update': current_time
                 }
-                logging.info(f"Started tracking {icao} at {distance:.1f} miles")
+                logging.warning(f"STARTED TRACKING: {icao} ({tracked_info.get('description', 'Unknown')}) at {distance:.1f} miles")
             else:
                 # Update existing tracking
                 flyby = self.tracked_flybys[icao]
@@ -271,7 +274,10 @@ class FlightMonitor:
         recipients = config.get_alert_recipients('tracked_aircraft')
 
         if not recipients:
+            logging.error(f"ALERT BLOCKED: No recipients configured for {icao}")
             return
+
+        logging.warning(f"SENDING ALERT: {icao} ({tracked_info.get('description', 'Unknown')}) at {distance:.1f} miles to {len(recipients)} recipients")
 
         # Send email alert
         success = self.email_service.send_aircraft_alert(
@@ -287,11 +293,13 @@ class FlightMonitor:
             # Log detection
             self._log_aircraft_detection(aircraft, tracked_info, distance)
 
-            logging.info(f"Tracked aircraft alert sent: {icao} ({tracked_info.get('description', 'Unknown')}) at closest approach: {distance:.1f} miles")
+            logging.warning(f"ALERT SENT SUCCESSFULLY: {icao} ({tracked_info.get('description', 'Unknown')}) at closest approach: {distance:.1f} miles")
 
             # Queue for Twitter posting (if enabled)
             if self.twitter_poster:
                 self.twitter_poster.queue_post(aircraft, tracked_info, distance)
+        else:
+            logging.error(f"ALERT FAILED: Email send failed for {icao}")
     
     def _check_anomalies(self, aircraft_list: List[Dict]) -> None:
         """Check for aircraft anomalies"""
