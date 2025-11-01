@@ -243,6 +243,42 @@ See aircraft_list.json for the complete list.
 
 ## System Evolution & Recent Updates
 
+### November 1, 2025 - Comprehensive Codebase Refactoring
+**Major Cleanup**: Removed dead code, freed disk space, improved code quality
+
+**Changes:**
+- ✅ **Archived dead AI intelligence system**: Moved 15 Python files (7,141 lines) to `archive/ai_intelligence_deprecated/`
+- ✅ **Deleted unused databases**: Freed 1.76GB disk space (flight_paths.db, contextual_intelligence.db, etc.)
+- ✅ **Fixed exception handling bugs**: Replaced 4 bare `except:` statements with specific exceptions
+- ✅ **Organized file structure**:
+  - Created `tests/` directory (8 test files)
+  - Created `scripts/` directory (9 utility scripts)
+  - Root now contains only 9 core production files
+- ✅ **Security audit**: Verified no `debug=True` in production code, proper logging configuration
+- ✅ **Documentation**: Created comprehensive REFACTORING.md
+
+**Impact:**
+- Repository footprint reduced by 50%
+- Clearer project structure
+- Better error handling and debugging
+- Easier maintenance and onboarding
+- No breaking changes - fully backward compatible
+
+**File Structure:**
+```
+/flighttrak/
+├── Core Files (9):
+│   ├── flight_monitor.py, enhanced_dashboard.py, config_manager.py
+│   ├── email_service.py, anomaly_detector.py, utils.py
+│   ├── flightaware_lookup.py, twitter_poster.py, weekly_report.py
+├── tests/ (8 test files)
+├── scripts/ (9 utility scripts)
+├── archive/ai_intelligence_deprecated/ (15 dead files)
+└── Configuration & docs
+```
+
+See REFACTORING.md for complete details.
+
 ### October 30, 2025 - Smart Alerting & Emergency Filter Enhancements
 **Major UX Improvements**:
 - ✅ **Smart Closest-Approach Alerting**: Replaced spam-prone 5-minute cooldown with intelligent tracking

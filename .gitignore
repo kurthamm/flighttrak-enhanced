@@ -47,3 +47,20 @@ aircraft_list_merged.json
 # Cache
 .cache/
 *.cache
+
+# FAA Database files (large downloads)
+MASTER.txt
+ACFTREF.txt
+ReleasableAircraft.zip
+*.pdf
+ardata.pdf
+faa_discovery_report_*.txt
+
+# Test and debug files (root only, not tests/ directory)
+/test_*.py
+/debug_*.py
+*.out
+*.timestamped
+new_aircraft_to_add.json
+/restart_service.sh
+STATUS_*.md

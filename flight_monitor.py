@@ -550,7 +550,7 @@ class FlightMonitor:
                         if 'Active:' in line:
                             diagnostics['dump1090_service']['details'] = line.strip()
                             break
-                except:
+                except (AttributeError, ValueError, IndexError):
                     pass
 
         except subprocess.TimeoutExpired:

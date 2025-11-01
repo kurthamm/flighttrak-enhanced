@@ -103,7 +103,7 @@ class FlightAwareLookup:
         try:
             dt = datetime.fromisoformat(time_str.replace('Z', '+00:00'))
             return dt.strftime('%I:%M %p %Z on %b %d')
-        except:
+        except (ValueError, AttributeError):
             return time_str
 
     def get_flight_info_by_icao(self, icao_hex: str, callsign: Optional[str] = None) -> Optional[Dict]:

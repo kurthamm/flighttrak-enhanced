@@ -24,7 +24,7 @@ except ImportError:
 try:
     from config_manager import config
     NEWSAPI_KEY = config.get('newsapi_key')
-except:
+except (ImportError, KeyError, AttributeError):
     NEWSAPI_KEY = None
 
 
@@ -565,7 +565,7 @@ class EmailService:
                 home_lat, home_lon = config.get_home_coordinates()
                 distance = haversine_distance(home_lat, home_lon, lat, lon)
                 distance_text = f"<tr><td style='padding:8px;font-weight:bold;'>Distance from Home:</td><td style='padding:8px;'>{distance:.1f} miles</td></tr>"
-            except:
+            except (ImportError, AttributeError, ValueError, TypeError):
                 pass
 
         # Generate flight plan HTML section if available
