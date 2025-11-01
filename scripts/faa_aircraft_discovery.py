@@ -243,6 +243,28 @@ class FAAAircraftDiscovery:
         logging.info(f"Found {len(rare_birds)} rare warbirds")
         return rare_birds
     
+    def clean_owner_name(self, owner: str) -> str:
+        """
+        Clean up owner names from FAA database (handles truncation, standardization)
+        """
+        # Known truncation fixes from FAA database character limits
+        truncation_fixes = {
+            'AMERICAN AIRPOWER HERITAGE FLY MUSEU': 'American Airpower Heritage Flying Museum',
+            'CHAMPAIGN AVIATION MUSEUM': 'Champaign Aviation Museum',
+            'PLANE OF FAME AIR MUSEUM': 'Planes of Fame Air Museum',
+            'LIBERTY FOUNDATION INC': 'Liberty Foundation Inc',
+            'WORLDS GREATEST AIRCRAFT COLLECTION INC': 'Worlds Greatest Aircraft Collection Inc',
+            'MID AMERICA FLIGHT MUSEUM INC': 'Mid America Flight Museum Inc',
+        }
+
+        # Check if we have a known fix
+        owner_upper = owner.upper()
+        if owner_upper in truncation_fixes:
+            return truncation_fixes[owner_upper]
+
+        # Otherwise, just title case it
+        return owner.title()
+
     def add_aircraft_to_tracking(self, new_celebs: List[Dict], rare_birds: List[Dict]) -> int:
         """
         Automatically add discovered aircraft to aircraft_list.json
@@ -278,15 +300,18 @@ class FAAAircraftDiscovery:
             }
 
             for bird in rare_birds:
+                # Clean owner name (fixes FAA database truncations)
+                clean_owner = self.clean_owner_name(bird['owner'])
+
                 # Create detailed description
                 base_desc = warbird_descriptions.get(bird['type'], f"Rare {bird['type']} warbird")
-                description = f"{base_desc}. Currently owned by {bird['owner']}"
+                description = f"{base_desc}. Currently owned by {clean_owner}"
 
                 aircraft_entry = {
                     "icao": bird['icao'].upper(),
                     "tail_number": bird['tail'],
                     "model": bird['model'].title(),
-                    "owner": bird['owner'].title(),
+                    "owner": clean_owner,
                     "description": description
                 }
                 aircraft_to_add.append(aircraft_entry)
