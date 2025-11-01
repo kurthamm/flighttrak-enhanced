@@ -42,6 +42,7 @@ FlightTrak is an intelligent real-time aircraft monitoring system that tracks 69
 **email_service.py**: Email alerts via Gmail SMTP
 - send_aircraft_alert() - Enhanced HTML emails with distance and tracking links
 - send_anomaly_alert() - Emergency squawk code alerts
+- **Integrated FlightAware API** - FlightAwareLookup class for flight plan data
 - Uses Gmail SMTP with TLS (port 587), no API costs
 
 **anomaly_detector.py**: Intelligent emergency detection
@@ -243,34 +244,46 @@ See aircraft_list.json for the complete list.
 
 ## System Evolution & Recent Updates
 
-### November 1, 2025 - Comprehensive Codebase Refactoring
-**Major Cleanup**: Removed dead code, freed disk space, improved code quality
+### November 1, 2025 - Comprehensive Codebase Refactoring & Consolidation
+**Major Cleanup**: Removed dead code, freed disk space, improved code quality, consolidated architecture
 
-**Changes:**
+**Phase 1 - Initial Refactoring:**
 - ✅ **Archived dead AI intelligence system**: Moved 15 Python files (7,141 lines) to `archive/ai_intelligence_deprecated/`
 - ✅ **Deleted unused databases**: Freed 1.76GB disk space (flight_paths.db, contextual_intelligence.db, etc.)
 - ✅ **Fixed exception handling bugs**: Replaced 4 bare `except:` statements with specific exceptions
 - ✅ **Organized file structure**:
   - Created `tests/` directory (8 test files)
   - Created `scripts/` directory (9 utility scripts)
-  - Root now contains only 9 core production files
+  - Root reduced to 9 core production files
 - ✅ **Security audit**: Verified no `debug=True` in production code, proper logging configuration
-- ✅ **Documentation**: Created comprehensive REFACTORING.md
+
+**Phase 2 - Module Consolidation:**
+- ✅ **Consolidated FlightAware API**: Merged `flightaware_lookup.py` (139 lines) into `email_service.py`
+  - Eliminated single-use module (only imported by email_service.py)
+  - Reduced import complexity
+- ✅ **Moved weekly_report.py to scripts/**: Standalone script with no imports
+  - Now in `scripts/weekly_report.py` where it belongs
+- ✅ **Final result**: **7 core files** (reduced from 9, down 22%)
 
 **Impact:**
-- Repository footprint reduced by 50%
-- Clearer project structure
+- Repository footprint reduced by 50%+
+- Core modules reduced from 9 → 7 files
+- Clearer project structure with single-responsibility modules
 - Better error handling and debugging
 - Easier maintenance and onboarding
 - No breaking changes - fully backward compatible
 
-**File Structure:**
+**Final File Structure:**
 ```
 /flighttrak/
-├── Core Files (9):
-│   ├── flight_monitor.py, enhanced_dashboard.py, config_manager.py
-│   ├── email_service.py, anomaly_detector.py, utils.py
-│   ├── flightaware_lookup.py, twitter_poster.py, weekly_report.py
+├── Core Files (7):
+│   ├── flight_monitor.py (33K) - Main tracking service
+│   ├── enhanced_dashboard.py (12K) - Web dashboard
+│   ├── config_manager.py (11K) - Configuration
+│   ├── email_service.py (54K) - Alerts + FlightAware API
+│   ├── anomaly_detector.py (27K) - Emergency detection
+│   ├── twitter_poster.py (13K) - Social media posting
+│   └── utils.py (11K) - Shared utilities
 ├── tests/ (8 test files)
 ├── scripts/ (9 utility scripts)
 ├── archive/ai_intelligence_deprecated/ (15 dead files)

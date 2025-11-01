@@ -344,7 +344,84 @@ After deploying these changes:
 
 ---
 
-**Refactoring completed:** November 1, 2025
-**Total time:** ~3 hours
-**Lines changed:** 7,141 removed, ~50 fixed
+## Phase 5: Module Consolidation ✅
+
+### Objective
+After initial cleanup reduced files from 40 → 9, further analysis revealed opportunities to consolidate single-use modules and standalone scripts.
+
+### Analysis
+
+**File Usage Review:**
+```bash
+# Import analysis revealed:
+anomaly_detector.py    → Only imported by flight_monitor.py
+flightaware_lookup.py  → Only imported by email_service.py  ✅ CONSOLIDATE
+twitter_poster.py      → Only imported by flight_monitor.py
+weekly_report.py       → NOT imported anywhere             ✅ MOVE TO SCRIPTS
+```
+
+**Decision Criteria:**
+- **Small single-use modules** (<200 lines, 1 importing file) → Merge into parent
+- **Large single-use modules** (>500 lines) → Keep separate for maintainability
+- **Standalone scripts** (no imports) → Move to scripts/ directory
+
+### Actions Taken
+
+**1. Moved weekly_report.py to scripts/**
+```bash
+git mv weekly_report.py scripts/
+```
+**Rationale:**
+- 553 lines, standalone script with `if __name__ == '__main__'`
+- Never imported by any other module
+- Runs independently via cron for weekly summaries
+- Belongs with other utility scripts
+
+**2. Merged flightaware_lookup.py into email_service.py**
+```bash
+# flightaware_lookup.py: 139 lines, 1 class, 1 helper function
+# Only imported by email_service.py
+```
+**Changes:**
+- Removed `from flightaware_lookup import get_flightaware_lookup`
+- Integrated `FlightAwareLookup` class directly into email_service.py
+- Preserved `get_flightaware_lookup()` singleton pattern
+- Added clear section delimiter comments
+- Deleted flightaware_lookup.py
+
+**Result:** email_service.py grew from 49K → 54K (+5K, +10%)
+
+**3. Kept separate (after analysis):**
+- **anomaly_detector.py** (608 lines) - Too large to merge, focused domain logic
+- **twitter_poster.py** (328 lines) - Optional feature, good separation
+
+### Metrics
+
+| Metric | Before | After | Change |
+|--------|--------|-------|--------|
+| Core Python files (root) | 9 | 7 | -2 (-22%) |
+| Files in scripts/ | 9 | 10 | +1 |
+| email_service.py size | 49K | 54K | +5K |
+| Total consolidation | - | - | 2 files eliminated |
+
+### Benefits
+
+**Immediate:**
+- Simpler project structure (7 vs 9 core files)
+- Eliminated single-use module overhead
+- Reduced import complexity (no flightaware_lookup import)
+- Better logical grouping (FlightAware with email alerts)
+
+**Long-term:**
+- Easier navigation (fewer files to search)
+- Clear separation: scripts vs core modules
+- Reduced maintenance surface (fewer import chains)
+- Better architecture (single-responsibility at module level)
+
+---
+
+**Refactoring completed:** November 1, 2025 (Phase 1-4), November 1, 2025 (Phase 5 consolidation)
+**Total time:** ~3.5 hours (Phase 1-4: 3h, Phase 5: 0.5h)
+**Lines changed:** 7,141 removed, ~50 fixed, 139 merged
 **Disk freed:** 1.76GB
+**Files consolidated:** 40 → 7 core files (82.5% reduction)

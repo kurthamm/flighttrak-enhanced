@@ -1,0 +1,50 @@
+reviews:
+  profile: chill
+  path_instructions:
+    - path: "**/*.py"
+      instructions: |
+        FOCUS ON CODE CONSOLIDATION AND ARCHITECTURE SIMPLIFICATION
+
+        Current Structure Analysis:
+        - flight_monitor.py (33K) - Main tracking service
+        - enhanced_dashboard.py (12K) - Flask web dashboard
+        - config_manager.py (11K) - Configuration management
+        - email_service.py (49K) - Gmail SMTP alerts
+        - utils.py (11K) - Shared utilities
+        - anomaly_detector.py (27K) - Emergency detection (ONLY imported by flight_monitor.py)
+        - flightaware_lookup.py (4.8K) - FlightAware API (ONLY imported by email_service.py)
+        - twitter_poster.py (13K) - Twitter posting (ONLY imported by flight_monitor.py)
+        - weekly_report.py (19K) - Weekly reports (NOT imported anywhere - standalone script)
+
+        SPECIFIC REVIEW QUESTIONS:
+
+        1. FILE CONSOLIDATION OPPORTUNITIES
+           - Should anomaly_detector.py (only used by flight_monitor.py) be merged into flight_monitor.py?
+           - Should flightaware_lookup.py (only used by email_service.py) be merged into email_service.py?
+           - Should twitter_poster.py (only used by flight_monitor.py) be merged into flight_monitor.py?
+           - Should weekly_report.py move to scripts/ directory since it's a standalone script?
+
+        2. CODE DUPLICATION
+           - Are there duplicated functions, patterns, or logic across these files?
+           - Can any shared code be extracted to utils.py?
+
+        3. ARCHITECTURAL SIMPLIFICATION
+           - For a 4,311 line application, is 9 core files appropriate or over-engineered?
+           - What is the optimal file structure? 5 files? 7 files? Keep 9?
+           - Would consolidation improve or harm maintainability?
+
+        4. MODULE COHESION
+           - Do any modules have low cohesion (unrelated functions grouped together)?
+           - Are there tight couplings that suggest files should be merged?
+
+        5. IMPORT COMPLEXITY
+           - Any circular dependencies or overly complex import chains?
+           - Would merging reduce import complexity?
+
+        PROVIDE SPECIFIC, ACTIONABLE RECOMMENDATIONS:
+        - Identify exact files to merge (if any)
+        - Explain the benefits and risks of each consolidation
+        - Suggest final file structure with line counts
+        - Note any code that should be extracted or reorganized
+
+        GOAL: Simplify the codebase to the minimum reasonable number of files while maintaining readability and separation of concerns appropriate for this application size.
