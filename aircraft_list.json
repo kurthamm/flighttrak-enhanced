@@ -36,7 +36,7 @@
             "description": "Commemorative Air Force's touring B-29 \"FIFI\""
         },
         {
-            "icao": "A6BB3A",
+            "icao": "A61F45",
             "tail_number": "N494DF",
             "model": "Ford Trimotor",
             "owner": "Experimental Aircraft Association",
@@ -61,66 +61,162 @@
             "tail_number": "N11AF",
             "model": "Gulfstream G700",
             "owner": "Jeff Bezos",
-            "description": "Jeff Bezos' factory-fresh Gulfstream G700 delivered 2024"
+            "description": "Jeff Bezos' factory-fresh Gulfstream G700 delivered 2024",
+            "context": {
+                "net_worth": "$196 billion (2024)",
+                "aircraft_value": "$80 million",
+                "specs": {
+                    "range": "7,500 nautical miles",
+                    "speed": "Mach 0.925 (710 mph)",
+                    "passengers": "Up to 19"
+                },
+                "fun_facts": [
+                    "Brand new Gulfstream G700 delivered July 2024 - latest flagship model",
+                    "Most advanced business jet in the world with cutting-edge avionics",
+                    "Can fly non-stop from New York to Singapore or LA to Sydney",
+                    "Features panoramic windows, ultra-quiet cabin, and circadian lighting system"
+                ],
+                "wikipedia": "https://en.wikipedia.org/wiki/Jeff_Bezos"
+            }
         },
         {
             "icao": "A835AD",
             "tail_number": "N758PB",
             "model": "Gulfstream G650",
             "owner": "Jeff Bezos",
-            "description": "Secondary Gulfstream G650 managed by Poplar Glen LLC for Jeff Bezos"
+            "description": "Secondary Gulfstream G650 managed by Poplar Glen LLC for Jeff Bezos",
+            "context": {
+                "net_worth": "$196 billion (2024)",
+                "aircraft_value": "$70 million",
+                "specs": {
+                    "range": "7,000 nautical miles",
+                    "speed": "Mach 0.925 (710 mph)",
+                    "passengers": "Up to 18"
+                },
+                "fun_facts": [
+                    "Secondary G650 for simultaneous trips or backup operations",
+                    "Managed through Poplar Glen LLC for privacy",
+                    "Can fly at 51,000 feet - higher than almost all other jets",
+                    "One of the fastest civilian aircraft in the world"
+                ],
+                "wikipedia": "https://en.wikipedia.org/wiki/Jeff_Bezos"
+            }
         },
         {
             "icao": "A18845",
             "tail_number": "N1980K",
             "model": "Gulfstream G650ER",
             "owner": "Kim Kardashian",
-            "description": "Kim Kardashian's bespoke G650ER nicknamed \"Kim Air\""
+            "description": "Kim Kardashian's bespoke G650ER nicknamed \"Kim Air\"",
+            "context": {
+                "net_worth": "$1.7 billion (2024)",
+                "aircraft_value": "$95 million (custom interior)",
+                "specs": {
+                    "range": "7,500 nautical miles",
+                    "speed": "Mach 0.925 (710 mph)",
+                    "passengers": "Up to 18"
+                },
+                "fun_facts": [
+                    "Nicknamed 'Kim Air' - features all-beige custom cashmere interior",
+                    "Interior designed by Waldo Fernandez and Tommy Clements",
+                    "Seats convert to lie-flat beds with custom bedding",
+                    "Tail number ends in '80K' - matching her birth year and estimated cost"
+                ],
+                "wikipedia": "https://en.wikipedia.org/wiki/Kim_Kardashian"
+            }
         },
         {
-            "icao": "A4AEB6",
+            "icao": "A2AE0A",
             "tail_number": "N272BG",
             "model": "Gulfstream G550",
             "owner": "Elon Musk (Falcon Landing LLC)",
-            "description": "2007 G550 - Used for SpaceX/Tesla employee transport and private trips"
+            "description": "2007 G550 - Used for SpaceX/Tesla employee transport and private trips",
+            "context": {
+                "net_worth": "$195 billion (2024)",
+                "aircraft_value": "$45 million",
+                "specs": {
+                    "range": "6,750 nautical miles",
+                    "speed": "Mach 0.87 (668 mph)",
+                    "passengers": "Up to 16"
+                },
+                "fun_facts": [
+                    "Older G550 used for employee transport and shorter regional trips",
+                    "Often shuttles SpaceX engineers between facilities",
+                    "Backup aircraft when G650ER is in maintenance",
+                    "Also registered to Falcon Landing LLC"
+                ],
+                "wikipedia": "https://en.wikipedia.org/wiki/Elon_Musk"
+            }
         },
         {
             "icao": "A835AF",
             "tail_number": "N628TS",
             "model": "Gulfstream G650ER",
             "owner": "Elon Musk (Falcon Landing LLC)",
-            "description": "2015 flagship G650ER - Primary aircraft for long-haul flights - Heavily tracked"
+            "description": "2015 flagship G650ER - Primary aircraft for long-haul flights - Heavily tracked",
+            "context": {
+                "net_worth": "$195 billion (2024)",
+                "aircraft_value": "$70 million",
+                "specs": {
+                    "range": "7,500 nautical miles",
+                    "speed": "Mach 0.925 (710 mph)",
+                    "passengers": "Up to 18"
+                },
+                "fun_facts": [
+                    "Most tracked private jet in history - inspired @ElonJet Twitter account controversy",
+                    "Flies between Tesla factories, SpaceX sites, and Twitter/X HQ constantly",
+                    "Used for rapid international trips - can reach Europe or Asia from US non-stop",
+                    "Registered to Falcon Landing LLC (named after SpaceX's rocket landing program)"
+                ],
+                "wikipedia": "https://en.wikipedia.org/wiki/Elon_Musk"
+            }
         },
         {
-            "icao": "A22C64",
+            "icao": "A96F69",
             "tail_number": "N707JT",
             "model": "Boeing 707-138B",
             "owner": "John Travolta",
             "description": "Qantas 707 restored by John Travolta; donated to HARS for preservation"
         },
         {
-            "icao": "A231EA",
+            "icao": "A0F9E7",
             "tail_number": "N162JC",
             "model": "Gulfstream V",
             "owner": "Jim Carrey",
             "description": "Actor Jim Carrey - Gulfstream V operated through JCFLY LLC"
         },
         {
-            "icao": "A4A8CD",
+            "icao": "A55B7F",
             "tail_number": "N444WT",
             "model": "Bombardier Global 7500",
             "owner": "Matt Damon",
             "description": "Bombardier Global 7500 owned by Waterfall Productions for Matt Damon"
         },
         {
-            "icao": "A4A9E2",
+            "icao": "A63665",
             "tail_number": "N5MV",
             "model": "Dassault Falcon 900",
             "owner": "Michael Bloomberg",
-            "description": "Bloomberg LP corporate Falcon 900 primarily used by Michael Bloomberg"
+            "description": "Bloomberg LP corporate Falcon 900 primarily used by Michael Bloomberg",
+            "context": {
+                "net_worth": "$106 billion (2024)",
+                "aircraft_value": "$55 million",
+                "specs": {
+                    "range": "4,750 nautical miles",
+                    "speed": "Mach 0.87 (668 mph)",
+                    "passengers": "Up to 14"
+                },
+                "fun_facts": [
+                    "Primary corporate jet for Bloomberg LP business operations",
+                    "Used for rapid trips between financial capitals worldwide",
+                    "Bloomberg operates multiple jets for flexibility",
+                    "Features secure communications for sensitive business matters"
+                ],
+                "wikipedia": "https://en.wikipedia.org/wiki/Michael_Bloomberg"
+            }
         },
         {
-            "icao": "A4A9E4",
+            "icao": "A5BF2C",
             "tail_number": "N47EG",
             "model": "Dassault Falcon 900",
             "owner": "Michael Bloomberg",
@@ -134,63 +230,111 @@
             "description": "Bloomberg philanthropic Falcon 900 often leased for charity travel"
         },
         {
-            "icao": "A4AFCD",
+            "icao": "A21FE6",
             "tail_number": "N236MJ",
             "model": "Gulfstream G550",
             "owner": "Michael Jordan",
             "description": "Michael Jordan's custom-painted G550 with Jumpman logo"
         },
         {
-            "icao": "A4B29D",
+            "icao": "AC643B",
             "tail_number": "N898NC",
             "model": "Gulfstream G650",
             "owner": "Rupert Murdoch",
             "description": "Murdoch family G650 operated via News Corp aviation department"
         },
         {
-            "icao": "A4BEB9",
+            "icao": "AA3410",
             "tail_number": "N757AF",
             "model": "Boeing 757-200",
             "owner": "Donald Trump (Trump Organization)",
-            "description": "Trump Organization flagship 757-200 nicknamed \"Trump Force One\""
+            "description": "Trump Organization flagship 757-200 nicknamed \"Trump Force One\"",
+            "context": {
+                "net_worth": "$2.6 billion (est. 2024)",
+                "aircraft_value": "$100+ million (customized)",
+                "specs": {
+                    "range": "4,200 nautical miles",
+                    "speed": "Mach 0.80 (530 mph)",
+                    "passengers": "43 capacity"
+                },
+                "fun_facts": [
+                    "Nicknamed 'Trump Force One' - famously used during presidential campaigns",
+                    "Interior features 24-karat gold plated fixtures and seatbelts",
+                    "Former commercial airliner (built 1991) converted to luxury transport",
+                    "Master bedroom, dining room, guest suites, and shower on board"
+                ],
+                "wikipedia": "https://en.wikipedia.org/wiki/Donald_Trump"
+            }
         },
         {
-            "icao": "A4673E",
+            "icao": "AA5BC4",
             "tail_number": "N767CJ",
             "model": "Boeing 767-200ER",
             "owner": "Drake (via Cargojet Airways)",
-            "description": "Cargojet-operated Boeing 767 repainted for Drake as \"Air Drake\""
+            "description": "Cargojet-operated Boeing 767 repainted for Drake as \"Air Drake\"",
+            "context": {
+                "net_worth": "$250 million (2024)",
+                "aircraft_value": "$220 million (customized)",
+                "specs": {
+                    "range": "6,385 nautical miles",
+                    "speed": "Mach 0.80 (528 mph)",
+                    "passengers": "30+ capacity"
+                },
+                "fun_facts": [
+                    "Nicknamed 'Air Drake' - one of the most extravagant celebrity jets",
+                    "Custom interior with master bedroom, private casino, full bar, and gold fixtures",
+                    "Originally a commercial airliner, converted into ultra-luxury private jet",
+                    "Gift from Cargojet Airways in 2019 - features massive OVO owl logo on tail"
+                ],
+                "wikipedia": "https://en.wikipedia.org/wiki/Drake_(musician)"
+            }
         },
         {
-            "icao": "A47CB5",
+            "icao": "A81B13",
             "tail_number": "N621MM",
             "model": "Dassault Falcon 7X",
             "owner": "Taylor Swift",
-            "description": "Primary Dassault Falcon 7X for Taylor Swift (purchased 2023)"
+            "description": "Primary Dassault Falcon 7X for Taylor Swift (purchased 2023)",
+            "context": {
+                "net_worth": "$1.1 billion (2024)",
+                "aircraft_value": "$54 million",
+                "specs": {
+                    "range": "5,950 nautical miles",
+                    "speed": "Mach 0.90 (690 mph)",
+                    "passengers": "Up to 16"
+                },
+                "fun_facts": [
+                    "Most tracked celebrity jet in the world - sparked climate activism debates",
+                    "Used extensively during record-breaking Eras Tour - traveled 125,000+ miles in 2023",
+                    "Can fly nonstop from Los Angeles to London or New York to Tokyo",
+                    "Features luxury cabin with full galley, bedroom suite, and entertainment systems"
+                ],
+                "wikipedia": "https://en.wikipedia.org/wiki/Taylor_Swift"
+            }
         },
         {
-            "icao": "A61C3A",
+            "icao": "A67D2E",
             "tail_number": "N517TW",
             "model": "Gulfstream V",
             "owner": "Tiger Woods",
             "description": "Tiger Woods' Gulfstream V with TW logo"
         },
         {
-            "icao": "A61D4E",
+            "icao": "A97659",
             "tail_number": "N709DS",
             "model": "Gulfstream G650",
             "owner": "Steve Ballmer",
             "description": "Steve Ballmer's Gulfstream G650 for LA Clippers and personal travel"
         },
         {
-            "icao": "A61F99",
+            "icao": "A88D6A",
             "tail_number": "N650HA",
             "model": "Gulfstream G650",
             "owner": "Marc Benioff",
             "description": "Marc Benioff's G650 nicknamed \"Cloudforce One\""
         },
         {
-            "icao": "A62EA1",
+            "icao": "A988EC",
             "tail_number": "N713TS",
             "model": "Embraer E-190",
             "owner": "Travis Scott",
@@ -204,56 +348,56 @@
             "description": "Jay-Z and Beyonce shared Gulfstream V registered to SC Aviation"
         },
         {
-            "icao": "A632F4",
+            "icao": "A87A8F",
             "tail_number": "N6453",
             "model": "Gulfstream G650",
             "owner": "Nike, Inc.",
             "description": "Nike corporate G650 supporting athlete and executive shuttles"
         },
         {
-            "icao": "A65DF9",
+            "icao": "AB2404",
             "tail_number": "N817GS",
             "model": "Gulfstream G650",
             "owner": "Larry Ellison",
             "description": "Larry Ellison's Lanai-based G650 for Oracle and island operations"
         },
         {
-            "icao": "A67DBE",
+            "icao": "AD18D5",
             "tail_number": "N943FL",
             "model": "Cessna Citation Latitude",
             "owner": "Ron DeSantis",
             "description": "Florida Governor's state-operated Citation Latitude"
         },
         {
-            "icao": "A69F9E",
+            "icao": "A7135E",
             "tail_number": "N555QB",
             "model": "Cessna Citation 750",
             "owner": "Judge Judy",
             "description": "Judge Judy's Citation X for filming and personal travel"
         },
         {
-            "icao": "A69FE2",
+            "icao": "A21084",
             "tail_number": "N232G",
             "model": "Gulfstream G650",
             "owner": "Sergey Brin",
             "description": "Sergey Brin's Gulfstream G650 via Bayshore Management"
         },
         {
-            "icao": "A6AC73",
+            "icao": "ACC306",
             "tail_number": "N921MT",
             "model": "Bombardier Global Express",
             "owner": "Mark Cuban",
             "description": "Mark Cuban's Global Express for Dallas Mavericks logistics"
         },
         {
-            "icao": "A6B42A",
+            "icao": "A89621",
             "tail_number": "N652WE",
             "model": "Gulfstream G650",
             "owner": "Eric Schmidt",
             "description": "Eric Schmidt's G650 via Palo Alto investor trust"
         },
         {
-            "icao": "A6B6C2",
+            "icao": "A1E50A",
             "tail_number": "N221DG",
             "model": "Gulfstream G650",
             "owner": "David Geffen",
@@ -267,21 +411,21 @@
             "description": "Playboy Enterprises Global Express used for branding tours"
         },
         {
-            "icao": "A6BDE1",
+            "icao": "AC145B",
             "tail_number": "N878DB",
             "model": "Gulfstream V",
             "owner": "Peter Thiel",
             "description": "Peter Thiel's Gulfstream V registered to Palantir co-founder"
         },
         {
-            "icao": "A6BDB1",
+            "icao": "A36D13",
             "tail_number": "N32MJ",
             "model": "Gulfstream II",
             "owner": "Magic Johnson",
             "description": "Magic Johnson's Gulfstream II preserved as vintage executive jet"
         },
         {
-            "icao": "A6C1C2",
+            "icao": "A950C0",
             "tail_number": "N7KC",
             "model": "Dassault Falcon 900",
             "owner": "Kenny Chesney",
@@ -302,21 +446,21 @@
             "description": "Bill Gates' Gulfstream G650 used for long-haul philanthropy work"
         },
         {
-            "icao": "A6C498",
+            "icao": "A1820B",
             "tail_number": "N1969C",
             "model": "Gulfstream G550",
             "owner": "Sean 'Diddy' Combs (LOVEAIR LLC)",
             "description": "Sean \"Diddy\" Combs' black G550 owned by LOVEAIR LLC"
         },
         {
-            "icao": "A6CFE5",
+            "icao": "A6503C",
             "tail_number": "N506AB",
             "model": "Learjet 60",
             "owner": "Luke Bryan",
             "description": "Luke Bryan's Learjet 60 for concert travel"
         },
         {
-            "icao": "A6D918",
+            "icao": "A7C336",
             "tail_number": "N6GU",
             "model": "Cessna Citation Sovereign",
             "owner": "Harrison Ford",
@@ -330,91 +474,91 @@
             "description": "Phil Mickelson's Gulfstream V with PM logos"
         },
         {
-            "icao": "A6DB71",
+            "icao": "A95892",
             "tail_number": "N701DB",
             "model": "Gulfstream IV",
             "owner": "Dan Bilzerian",
             "description": "Dan Bilzerian's Gulfstream IV registered to Goat Airways"
         },
         {
-            "icao": "A6DFB9",
+            "icao": "A35206",
             "tail_number": "N313AR",
             "model": "Gulfstream IV",
             "owner": "Alex Rodriguez",
             "description": "Alex Rodriguez's Gulfstream IV managed through AROD Corp"
         },
         {
-            "icao": "A6E445",
+            "icao": "A97AA5",
             "tail_number": "N71KR",
             "model": "Bombardier Challenger 600",
             "owner": "Kid Rock",
             "description": "Kid Rock's Challenger 600 for touring logistics"
         },
         {
-            "icao": "A6E7AB",
+            "icao": "A4533A",
             "tail_number": "N378TP",
             "model": "Embraer E-190",
             "owner": "Tyler Perry",
             "description": "Tyler Perry Studios Embraer 190 configured as flying office"
         },
         {
-            "icao": "A6EAD1",
+            "icao": "AC6343",
             "tail_number": "N898CE",
             "model": "Gulfstream V",
             "owner": "Caesars Palace",
             "description": "Caesars Entertainment Gulfstream V for high-roller transport"
         },
         {
-            "icao": "A6EF2B",
+            "icao": "A5D041",
             "tail_number": "N474D",
             "model": "Gulfstream V",
             "owner": "Lady Gaga",
             "description": "Lady Gaga's chartered Gulfstream V operated by MGM Studios"
         },
         {
-            "icao": "A6F2B7",
+            "icao": "AB28C5",
             "tail_number": "N818TH",
             "model": "Dassault Falcon 900",
             "owner": "Tommy Hilfiger",
             "description": "Tommy Hilfiger's Falcon 900 with custom nautical interior"
         },
         {
-            "icao": "A6F6BE",
+            "icao": "AB772B",
             "tail_number": "N838MF",
             "model": "Gulfstream G650",
             "owner": "Ronald Perelman",
             "description": "Ronald Perelman's G650 for investment travel"
         },
         {
-            "icao": "A6F853",
+            "icao": "AD540A",
             "tail_number": "N958TB",
             "model": "Gulfstream IV",
             "owner": "Blake Shelton",
             "description": "Blake Shelton's G-IV for touring and The Voice schedule"
         },
         {
-            "icao": "A6F8DE",
+            "icao": "A3E6F0",
             "tail_number": "N350XX",
             "model": "Bombardier Challenger 350",
             "owner": "Tom Cruise",
             "description": "Tom Cruise's Challenger 350 supporting film production moves"
         },
         {
-            "icao": "A502AD",
+            "icao": "A395E2",
             "tail_number": "N330AU",
             "model": "McDonnell Douglas MD-10-30F",
             "owner": "Orbis International",
             "description": "Flying Eye Hospital providing mobile ophthalmic surgeries worldwide"
         },
         {
-            "icao": "A5D0C2",
+            "icao": "A3EA1F",
             "tail_number": "N351SL",
             "model": "Scaled Composites Model 351",
             "owner": "Stratolaunch LLC",
             "description": "Stratolaunch Roc - largest wingspan aircraft for hypersonic launch testing"
         },
         {
-            "icao": "A23CE9",
+            "icao": "AA9992",
             "tail_number": "N782SP",
             "model": "McDonnell Douglas DC-8-72CF",
             "owner": "Samaritan's Purse",
@@ -482,6 +626,128 @@
             "model": "Gulfstream V",
             "owner": "David Copperfield",
             "description": "World-famous magician - Personalized tail number (1DC = One David Copperfield)"
+        },
+        {
+            "icao": "A2F417",
+            "tail_number": "N29KW",
+            "model": "Boeing B-29 Superfortress",
+            "owner": "Fantasy of Flight Museum",
+            "description": "One of only 2 flying B-29 Superfortresses remaining in the world. WWII heavy bomber that ended the Pacific War.",
+            "category": "historic_warbird"
+        },
+        {
+            "icao": "A94F8D",
+            "tail_number": "N69972",
+            "model": "Boeing B-29 Superfortress",
+            "owner": "Doc's Friends Inc",
+            "description": "\"Doc\" - One of only 2 flying B-29 Superfortresses remaining in the world. Restored in Wichita, KS.",
+            "category": "historic_warbird"
+        },
+        {
+            "icao": "A1AC7C",
+            "tail_number": "N207EV",
+            "model": "Boeing B-17G Flying Fortress",
+            "owner": "Collings Foundation",
+            "description": "WWII heavy bomber - \"Nine O Nine\" replica. Only ~12 B-17s remain airworthy worldwide.",
+            "category": "historic_warbird"
+        },
+        {
+            "icao": "A118C8",
+            "tail_number": "N17W",
+            "model": "Boeing B-17F Flying Fortress",
+            "owner": "Museum of Flight Foundation",
+            "description": "Rare B-17F model. WWII heavy bomber, backbone of US daylight bombing campaign over Europe.",
+            "category": "historic_warbird"
+        },
+        {
+            "icao": "A1F0A5",
+            "tail_number": "N224J",
+            "model": "Consolidated B-24J Liberator",
+            "owner": "Collings Foundation",
+            "description": "\"Witchcraft\" - The ONLY flying B-24 Liberator in the world. Most-produced American bomber of WWII.",
+            "category": "historic_warbird"
+        },
+        {
+            "icao": "A0F450",
+            "tail_number": "N1602D",
+            "model": "Lockheed 10E Electra",
+            "owner": "Atchison Amelia Earhart Foundation",
+            "description": "Same model Amelia Earhart flew on her final flight. Rare 1930s twin-engine airliner.",
+            "category": "historic_aircraft"
+        },
+        {
+            "icao": "A9247D",
+            "tail_number": "N68885",
+            "model": "Gulfstream G650ER",
+            "owner": "Mark Zuckerberg",
+            "description": "Meta/Facebook founder's primary jet - Most tracked private jet worldwide via flight tracking activism",
+            "context": {
+                "net_worth": "$177 billion (2024)",
+                "aircraft_value": "$70 million",
+                "specs": {
+                    "range": "7,500 nautical miles",
+                    "speed": "Mach 0.925 (710 mph)",
+                    "passengers": "Up to 18"
+                },
+                "fun_facts": [
+                    "Primary jet for Meta business travel and international trips",
+                    "Used for philanthropic missions via Chan Zuckerberg Initiative",
+                    "Can reach anywhere in the world with single refueling stop",
+                    "Features advanced security and communications systems"
+                ],
+                "wikipedia": "https://en.wikipedia.org/wiki/Mark_Zuckerberg"
+            }
+        },
+        {
+            "icao": "A47B5A",
+            "tail_number": "N3880",
+            "model": "Gulfstream G700",
+            "owner": "Mark Zuckerberg",
+            "description": "Meta/Facebook founder's brand new G700 delivered December 2024 - $80M flagship with 50+ speed records",
+            "context": {
+                "net_worth": "$177 billion (2024)",
+                "aircraft_value": "$80 million",
+                "specs": {
+                    "range": "7,500 nautical miles",
+                    "speed": "Mach 0.925 (710 mph)",
+                    "passengers": "Up to 19"
+                },
+                "fun_facts": [
+                    "Brand new G700 delivered 2024 - same model as Bezos",
+                    "Most advanced business jet with revolutionary cabin design",
+                    "Features ultra-high-speed internet for remote work at 45,000 feet",
+                    "20 panoramic windows - largest in business aviation"
+                ],
+                "wikipedia": "https://en.wikipedia.org/wiki/Mark_Zuckerberg"
+            }
+        },
+        {
+            "icao": "A38348",
+            "tail_number": "N3250N",
+            "model": "Bombardier Challenger 650",
+            "owner": "Shaquille O'Neal",
+            "description": "NBA legend and TV personality - $27M jet, 84 flights in 2024"
+        },
+        {
+            "icao": "A18986",
+            "tail_number": "N1989R",
+            "model": "Gulfstream G650ER",
+            "owner": "Rory McIlroy",
+            "description": "Professional golfer - G650ER acquired late 2024, tail references birth year 1989"
+        },
+        {
+            "icao": "A22B0B",
+            "tail_number": "N239MJ",
+            "model": "Gulfstream G550",
+            "owner": "Michael Jordan",
+            "description": "NBA legend - Older G550 from 2005, complements his newer G650ER"
+        },
+        {
+            "icao": "A4A8C7",
+            "tail_number": "N4JR",
+            "model": "Cessna 150G",
+            "owner": "Logan Paul",
+            "description": "YouTuber/boxer - Small personal aircraft, frequently posts about flying"
         }
     ]
 }

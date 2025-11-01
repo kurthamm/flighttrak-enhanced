@@ -6,6 +6,7 @@ Handles all email communications with Gmail SMTP
 
 import smtplib
 import logging
+import requests
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime
@@ -18,6 +19,13 @@ try:
 except ImportError:
     FLIGHTAWARE_AVAILABLE = False
     logging.debug("FlightAware lookup not available")
+
+# Import config for NewsAPI key
+try:
+    from config_manager import config
+    NEWSAPI_KEY = config.get('newsapi_key')
+except:
+    NEWSAPI_KEY = None
 
 
 class EmailService:
@@ -180,7 +188,42 @@ class EmailService:
         subject = f"{status_emoji} FlightTrak Service: {service_name} {status.title()}"
 
         return self.send_email(recipient, subject, html_content)
-    
+
+    def _fetch_recent_news(self, owner_name: str, max_articles: int = 3) -> List[Dict]:
+        """Fetch recent news articles about aircraft owner using NewsAPI"""
+        if not NEWSAPI_KEY:
+            return []
+
+        try:
+            # Clean owner name for search (remove LLC, Inc, etc.)
+            search_query = owner_name
+            for suffix in [' LLC', ' Inc', ' (', 'via ', ' Organization', ' LP']:
+                search_query = search_query.split(suffix)[0]
+
+            url = 'https://newsapi.org/v2/everything'
+            params = {
+                'q': search_query.strip(),
+                'sortBy': 'publishedAt',
+                'pageSize': max_articles,
+                'apiKey': NEWSAPI_KEY,
+                'language': 'en'
+            }
+
+            response = requests.get(url, params=params, timeout=5)
+            if response.status_code == 200:
+                data = response.json()
+                articles = data.get('articles', [])
+                return [{
+                    'title': article.get('title', ''),
+                    'url': article.get('url', ''),
+                    'source': article.get('source', {}).get('name', 'Unknown'),
+                    'published': article.get('publishedAt', '')
+                } for article in articles[:max_articles]]
+        except Exception as e:
+            logging.debug(f"Could not fetch news for {owner_name}: {e}")
+
+        return []
+
     def _generate_aircraft_alert_html(self, aircraft: Dict, tracked_info: Dict, distance: float, flight_plan: Optional[Dict] = None) -> str:
         """Generate HTML for aircraft alert"""
         # Get additional flight data
@@ -190,6 +233,10 @@ class EmailService:
         lon = aircraft.get('lon', 0)
         heading = aircraft.get('track', 'N/A')
         vert_rate = aircraft.get('baro_rate', 0)
+
+        # FlightAware identifier: use callsign if available, otherwise tail number
+        callsign = aircraft.get('flight', '').strip() if aircraft.get('flight') else ''
+        flightaware_ident = callsign if callsign else tail
 
         # Calculate heading direction
         if isinstance(heading, (int, float)):
@@ -206,6 +253,154 @@ class EmailService:
 
         # Description with fallback
         description = tracked_info.get('description', tracked_info.get('owner', 'Tracked Aircraft'))
+
+        # Check if this is a historic warbird and add context
+        historic_context_html = ''
+        category = tracked_info.get('category', '')
+        model = tracked_info.get('model', '')
+
+        if category in ['historic_warbird', 'historic_aircraft']:
+            # Generate historic context based on aircraft type
+            context_info = {}
+
+            if 'B-29' in model:
+                context_info = {
+                    'icon': '💣',
+                    'title': 'WWII B-29 Superfortress',
+                    'facts': [
+                        '<strong>Only 2 flying B-29s remain in the world</strong> - this is one of them!',
+                        'Heaviest bomber of WWII, carried the atomic bombs to Hiroshima and Nagasaki',
+                        'First pressurized bomber, could fly at 31,000 feet',
+                        '141-foot wingspan, 99-foot length, 4 Wright R-3350 engines producing 2,200 HP each',
+                        'Seeing this aircraft is an extremely rare and historic moment'
+                    ]
+                }
+            elif 'B-17' in model:
+                context_info = {
+                    'icon': '✈️',
+                    'title': 'WWII B-17 Flying Fortress',
+                    'facts': [
+                        'Legendary WWII heavy bomber - only ~12 remain airworthy worldwide',
+                        'Backbone of US daylight bombing campaign over Nazi Germany',
+                        'Nicknamed "Flying Fortress" for its defensive firepower (13 machine guns)',
+                        '103-foot wingspan, 4 Wright R-1820 engines, cruised at 182 mph',
+                        'Famous for ability to sustain heavy battle damage and still fly home'
+                    ]
+                }
+            elif 'B-24' in model:
+                context_info = {
+                    'icon': '💣',
+                    'title': 'WWII B-24 Liberator',
+                    'facts': [
+                        '<strong>THE ONLY FLYING B-24 LIBERATOR IN THE WORLD!</strong>',
+                        'Most-produced American bomber of WWII (18,482 built)',
+                        'Flew in every theater of WWII, from Europe to the Pacific',
+                        '110-foot wingspan with distinctive twin tail, 4 Pratt & Whitney R-1830 engines',
+                        'This is a once-in-a-lifetime sighting - the sole survivor still flying'
+                    ]
+                }
+            elif 'Electra' in model and 'Lockheed' in model:
+                context_info = {
+                    'icon': '🛩️',
+                    'title': 'Lockheed 10 Electra',
+                    'facts': [
+                        'Same model Amelia Earhart flew on her final around-the-world attempt (1937)',
+                        'Revolutionary twin-engine airliner from the golden age of aviation (1934)',
+                        'All-metal construction, retractable landing gear - cutting edge for its time',
+                        'Cruised at 190 mph, carried 10 passengers in luxury',
+                        'Extremely rare - fewer than 15 Electras remain today'
+                    ]
+                }
+
+            if context_info:
+                facts_html = ''.join([f"<li style='margin:10px 0;line-height:1.6;'>{fact}</li>" for fact in context_info['facts']])
+                historic_context_html = f"""
+                <div style='background:#fff3cd;padding:25px;border-radius:8px;margin:20px 0;border-left:5px solid #ffc107;'>
+                    <h3 style='color:#856404;margin:0 0 15px 0;border-bottom:2px solid #ffe8a1;padding-bottom:10px;'>{context_info['icon']} Historic Aircraft Alert</h3>
+                    <h4 style='color:#856404;margin:15px 0;font-size:18px;'>{context_info['title']}</h4>
+                    <ul style='margin:15px 0;padding-left:25px;color:#856404;'>
+                        {facts_html}
+                    </ul>
+                </div>
+                """
+
+        # Generate celebrity/VIP context box if context data available
+        celebrity_context_html = ''
+        context = tracked_info.get('context', {})
+        if context:
+            net_worth = context.get('net_worth', '')
+            aircraft_value = context.get('aircraft_value', '')
+            specs = context.get('specs', {})
+            fun_facts = context.get('fun_facts', [])
+            wikipedia = context.get('wikipedia', '')
+
+            # Build specs table
+            specs_html = ''
+            if specs:
+                specs_rows = []
+                if specs.get('range'):
+                    specs_rows.append(f"<tr><td style='padding:8px;font-weight:bold;width:40%;'>Range:</td><td style='padding:8px;'>{specs['range']}</td></tr>")
+                if specs.get('speed'):
+                    specs_rows.append(f"<tr style='background:rgba(255,255,255,0.5);'><td style='padding:8px;font-weight:bold;'>Top Speed:</td><td style='padding:8px;'>{specs['speed']}</td></tr>")
+                if specs.get('passengers'):
+                    specs_rows.append(f"<tr><td style='padding:8px;font-weight:bold;'>Passenger Capacity:</td><td style='padding:8px;'>{specs['passengers']}</td></tr>")
+
+                if specs_rows:
+                    specs_html = f"<table style='width:100%;border-collapse:collapse;margin:15px 0;'>{''.join(specs_rows)}</table>"
+
+            # Build fun facts list
+            facts_html = ''
+            if fun_facts:
+                facts_html = '<ul style="margin:15px 0;padding-left:25px;color:#1a237e;">' + ''.join([
+                    f"<li style='margin:10px 0;line-height:1.6;'>{fact}</li>" for fact in fun_facts
+                ]) + '</ul>'
+
+            # Build value info
+            value_html = ''
+            if net_worth or aircraft_value:
+                value_html = '<div style="background:rgba(255,255,255,0.7);padding:15px;border-radius:6px;margin:15px 0;">'
+                if net_worth:
+                    value_html += f'<p style="margin:5px 0;"><strong>Owner Net Worth:</strong> {net_worth}</p>'
+                if aircraft_value:
+                    value_html += f'<p style="margin:5px 0;"><strong>Aircraft Value:</strong> {aircraft_value}</p>'
+                value_html += '</div>'
+
+            # Build Wikipedia link
+            wiki_link = ''
+            if wikipedia:
+                wiki_link = f'<div style="margin:15px 0;"><a href="{wikipedia}" style="color:#1565c0;text-decoration:none;font-weight:bold;">📖 Learn More on Wikipedia →</a></div>'
+
+            if value_html or specs_html or facts_html:
+                celebrity_context_html = f"""
+                <div style='background:#e8eaf6;padding:25px;border-radius:8px;margin:20px 0;border-left:5px solid #3f51b5;'>
+                    <h3 style='color:#1a237e;margin:0 0 15px 0;border-bottom:2px solid #c5cae9;padding-bottom:10px;'>💎 Celebrity Aircraft Details</h3>
+                    {value_html}
+                    {specs_html}
+                    {facts_html}
+                    {wiki_link}
+                </div>
+                """
+
+        # Fetch recent news about aircraft owner
+        news_html = ''
+        owner = tracked_info.get('owner', '')
+        if owner and not category in ['historic_warbird', 'historic_aircraft']:  # Skip news for historic aircraft
+            news_articles = self._fetch_recent_news(owner)
+            if news_articles:
+                news_items = ''.join([
+                    f"<div style='margin:15px 0;padding:15px;background:rgba(255,255,255,0.7);border-radius:6px;'>"
+                    f"<a href='{article['url']}' style='color:#1565c0;font-weight:bold;text-decoration:none;font-size:15px;'>{article['title']}</a>"
+                    f"<p style='margin:5px 0;color:#666;font-size:13px;'>{article['source']}</p>"
+                    f"</div>"
+                    for article in news_articles
+                ])
+
+                news_html = f"""
+                <div style='background:#f3e5f5;padding:25px;border-radius:8px;margin:20px 0;border-left:5px solid #9c27b0;'>
+                    <h3 style='color:#4a148c;margin:0 0 15px 0;border-bottom:2px solid #e1bee7;padding-bottom:10px;'>📰 Recent News</h3>
+                    {news_items}
+                </div>
+                """
 
         # Generate flight plan HTML section if available
         flight_plan_html = ''
@@ -257,12 +452,18 @@ class EmailService:
                     </table>
                 </div>
 
+                {historic_context_html}
+
+                {celebrity_context_html}
+
+                {news_html}
+
                 {flight_plan_html}
 
                 <div style='text-align:center;margin:25px 0;'>
                     <h3 style='color:#666;margin:0 0 15px 0;font-size:16px;'>Track This Flight:</h3>
                     <div style='display:inline-block;'>
-                        <a href='https://www.flightaware.com/live/flight/{icao}'
+                        <a href='https://www.flightaware.com/live/flight/{flightaware_ident}'
                            style='display:inline-block;background:#0066CC;color:white;padding:12px 20px;text-decoration:none;border-radius:6px;font-weight:bold;margin:5px;'>
                             FlightAware
                         </a>
@@ -273,6 +474,20 @@ class EmailService:
                         <a href='https://www.flightradar24.com/data/aircraft/{tail.lower()}'
                            style='display:inline-block;background:#FFD500;color:#333;padding:12px 20px;text-decoration:none;border-radius:6px;font-weight:bold;margin:5px;'>
                             Flightradar24
+                        </a>
+                    </div>
+                </div>
+
+                <div style='text-align:center;margin:20px 0;'>
+                    <h3 style='color:#666;margin:0 0 15px 0;font-size:16px;'>View Aircraft Photos:</h3>
+                    <div style='display:inline-block;'>
+                        <a href='https://www.jetphotos.com/registration/{tail}'
+                           style='display:inline-block;background:#2c3e50;color:white;padding:12px 20px;text-decoration:none;border-radius:6px;font-weight:bold;margin:5px;'>
+                            📸 JetPhotos
+                        </a>
+                        <a href='https://www.planespotters.net/search?q={tail}'
+                           style='display:inline-block;background:#34495e;color:white;padding:12px 20px;text-decoration:none;border-radius:6px;font-weight:bold;margin:5px;'>
+                            📷 Planespotters
                         </a>
                     </div>
                 </div>
@@ -316,6 +531,12 @@ class EmailService:
         squawk = aircraft.get('squawk', 'N/A')
         heading = aircraft.get('track', 'N/A')
         vert_rate = aircraft.get('baro_rate', 0)
+
+        # Try to get registration from ADS-B data (some aircraft transmit it)
+        registration = aircraft.get('r', '')  # Registration field in dump1090 JSON
+
+        # FlightAware identifier: use callsign if available, otherwise registration, otherwise nothing
+        flightaware_ident = flight if flight else registration if registration else None
 
         # Calculate heading direction
         if isinstance(heading, (int, float)):
@@ -406,10 +627,12 @@ class EmailService:
                 <div style='text-align:center;margin:25px 0;'>
                     <h3 style='color:#666;margin:0 0 15px 0;font-size:16px;'>Track This Emergency:</h3>
                     <div style='display:inline-block;'>
-                        <a href='https://www.flightaware.com/live/flight/{flight if flight else icao}'
+                        {f'''
+                        <a href='https://www.flightaware.com/live/flight/{flightaware_ident}'
                            style='display:inline-block;background:#0066CC;color:white;padding:12px 20px;text-decoration:none;border-radius:6px;font-weight:bold;margin:5px;'>
                             FlightAware
                         </a>
+                        ''' if flightaware_ident else ''}
                         <a href='https://globe.adsbexchange.com/?icao={icao.lower()}'
                            style='display:inline-block;background:#FF6B35;color:white;padding:12px 20px;text-decoration:none;border-radius:6px;font-weight:bold;margin:5px;'>
                             ADS-B Exchange
