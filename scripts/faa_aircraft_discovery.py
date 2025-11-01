@@ -32,6 +32,16 @@ RARE_WARBIRDS = {
     'B-24': ['CONSOLIDATED B-24', 'B-24 LIBERATOR'],
 }
 
+# Known truncation fixes from FAA database character limits
+OWNER_NAME_FIXES = {
+    'AMERICAN AIRPOWER HERITAGE FLY MUSEU': 'American Airpower Heritage Flying Museum',
+    'CHAMPAIGN AVIATION MUSEUM': 'Champaign Aviation Museum',
+    'PLANE OF FAME AIR MUSEUM': 'Planes of Fame Air Museum',
+    'LIBERTY FOUNDATION INC': 'Liberty Foundation Inc',
+    'WORLDS GREATEST AIRCRAFT COLLECTION INC': 'Worlds Greatest Aircraft Collection Inc',
+    'MID AMERICA FLIGHT MUSEUM INC': 'Mid America Flight Museum Inc',
+}
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -247,20 +257,14 @@ class FAAAircraftDiscovery:
         """
         Clean up owner names from FAA database (handles truncation, standardization)
         """
-        # Known truncation fixes from FAA database character limits
-        truncation_fixes = {
-            'AMERICAN AIRPOWER HERITAGE FLY MUSEU': 'American Airpower Heritage Flying Museum',
-            'CHAMPAIGN AVIATION MUSEUM': 'Champaign Aviation Museum',
-            'PLANE OF FAME AIR MUSEUM': 'Planes of Fame Air Museum',
-            'LIBERTY FOUNDATION INC': 'Liberty Foundation Inc',
-            'WORLDS GREATEST AIRCRAFT COLLECTION INC': 'Worlds Greatest Aircraft Collection Inc',
-            'MID AMERICA FLIGHT MUSEUM INC': 'Mid America Flight Museum Inc',
-        }
+        # Validate input
+        if not owner:
+            return ""
 
         # Check if we have a known fix
         owner_upper = owner.upper()
-        if owner_upper in truncation_fixes:
-            return truncation_fixes[owner_upper]
+        if owner_upper in OWNER_NAME_FIXES:
+            return OWNER_NAME_FIXES[owner_upper]
 
         # Otherwise, just title case it
         return owner.title()
