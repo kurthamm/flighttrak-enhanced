@@ -1,5 +1,11 @@
 # FlightTrak 🛩️
 
+![Python Version](https://img.shields.io/badge/python-3.10%2B-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
+![Status](https://img.shields.io/badge/status-operational-success)
+![ADS-B](https://img.shields.io/badge/ADS--B-dump1090-orange)
+![Platform](https://img.shields.io/badge/platform-Raspberry%20Pi%20%7C%20Linux-red)
+
 **Real-time ADS-B aircraft tracker** with smart alerts, FlightAware integration, and emergency squawk detection. Built for dump1090 and compatible with FlightRadar24/ADS-B Exchange data sources.
 
 An intelligent aircraft monitoring system that tracks 69 celebrity, government, and historic aircraft using **ADS-B data**. Features smart closest-approach alerting that sends ONE perfectly-timed notification per flyby, eliminating spam while maximizing engagement.
@@ -14,6 +20,19 @@ An intelligent aircraft monitoring system that tracks 69 celebrity, government, 
 - **FlightAware API users** wanting enhanced local tracking
 - **Raspberry Pi projects** for aircraft monitoring
 - Anyone interested in **real-time flight tracking** with smart alerts
+
+## 📖 Table of Contents
+- [Key Features](#-key-features)
+- [Quick Start](#quick-start)
+- [Configuration](#configuration)
+- [Usage](#usage)
+- [Twitter/X Integration](#twitterx-social-media-integration)
+- [Emergency Detection](#emergency-detection)
+- [Enhanced Email Alerts](#enhanced-email-alerts)
+- [Web Dashboard](#enhanced-web-dashboard)
+- [System Architecture](#system-architecture)
+- [Troubleshooting](#troubleshooting)
+- [Recent Updates](#recent-updates-october-2025)
 
 ## ⭐ Key Features
 
