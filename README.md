@@ -1,8 +1,19 @@
 # FlightTrak 🛩️
 
-An intelligent real-time aircraft monitoring system that tracks 69 celebrity, government, and historic aircraft. Features smart closest-approach alerting that sends ONE perfectly-timed notification per flyby, eliminating spam while maximizing engagement.
+**Real-time ADS-B aircraft tracker** with smart alerts, FlightAware integration, and emergency squawk detection. Built for dump1090 and compatible with FlightRadar24/ADS-B Exchange data sources.
 
-**Status**: ✅ Fully Operational (Updated October 30, 2025)
+An intelligent aircraft monitoring system that tracks 69 celebrity, government, and historic aircraft using **ADS-B data**. Features smart closest-approach alerting that sends ONE perfectly-timed notification per flyby, eliminating spam while maximizing engagement.
+
+**Status**: ✅ Fully Operational (Updated November 2, 2025)
+
+---
+
+### 🔍 Perfect for:
+- **ADS-B enthusiasts** running dump1090/readsb
+- **Aviation hobbyists** tracking celebrity/government aircraft
+- **FlightAware API users** wanting enhanced local tracking
+- **Raspberry Pi projects** for aircraft monitoring
+- Anyone interested in **real-time flight tracking** with smart alerts
 
 ## ⭐ Key Features
 
