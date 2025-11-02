@@ -20,10 +20,11 @@ FlightTrak is an intelligent real-time aircraft monitoring system that tracks 69
   - 30-minute safety timeout prevents losing long-flying aircraft
 - Sends **enhanced HTML email alerts** with distance, tracking links, and flight details
 - Logs detections to detected_aircraft.txt
-- **Intelligent emergency squawk detection** with false-positive filtering (7500/7600/7700/7777)
+- **Intelligent emergency squawk detection** with sustained verification (7500/7600/7700/7777)
+  - Requires 3 consecutive polls (45 seconds) to prevent accidental transponder false alarms
   - Filters 7600 (radio failure) during landing approaches to prevent spam
   - Checks altitude, descent rate, proximity to airports, and approach speed
-  - Genuine emergencies (7700, 7500, 7777) ALWAYS alert
+  - Genuine emergencies (7700, 7500, 7777) alert after 45-second verification period
   - Covers 40+ major US airports for accurate landing detection
 
 **2. enhanced_dashboard.py** (flighttrak-dashboard.service) - Web dashboard
@@ -47,10 +48,14 @@ FlightTrak is an intelligent real-time aircraft monitoring system that tracks 69
 
 **anomaly_detector.py**: Intelligent emergency detection
 - Detects emergency squawk codes (7500/7600/7700/7777) with false-positive filtering
+- **Sustained Squawk Detection**: Requires 3 consecutive polls (45 seconds) before alerting
+  - Prevents false alarms from accidental/momentary transponder code changes
+  - Tracks emergency squawks over time with poll counts and timestamps
+  - Automatically clears stale tracking after 2 minutes if squawk disappears
 - Smart landing detection: Filters 7600 alerts during normal approach/landing
   - Checks: altitude (<10,000 ft), descent rate (negative), airport proximity (<15 mi), approach speed (80-300 kt)
   - Uses database of 40+ major US airports (JFK, LAX, ORD, ATL, etc.)
-- Genuine emergencies (7700 hijack, 7500 emergency, 7777 intercept) ALWAYS alert
+- Genuine emergencies (7700 hijack, 7500 emergency, 7777 intercept) ALWAYS alert (after 45s verification)
 - No complex pattern analysis - focused on real emergencies only
 
 **utils.py**: Shared utilities
@@ -243,6 +248,47 @@ tail -f detected_aircraft.txt
 See aircraft_list.json for the complete list.
 
 ## System Evolution & Recent Updates
+
+### November 2, 2025 - Sustained Squawk Detection (False Alarm Prevention)
+**Emergency Alert Improvement**: Added intelligent time-based verification to prevent false alarms from accidental transponder codes
+
+**Problem Solved:**
+- Emergency squawk codes (7500/7600/7700/7777) were alerting immediately on first detection
+- Pilots accidentally dialing through emergency codes while changing transponder settings would trigger false alarms
+- Example: Changing from 2700 → 7200, pilot briefly hits 7500 (hijack code) → immediate false alarm
+
+**Solution Implemented:**
+- ✅ **Sustained Squawk Tracking**: Emergency squawk must persist for **3 consecutive polls (45 seconds)** before alerting
+- ✅ **Poll Count Monitoring**: Tracks each aircraft's emergency squawk with timestamps and poll counts
+- ✅ **Automatic Cleanup**: Clears stale tracking after 2 minutes if squawk disappears
+- ✅ **Smart State Management**: Detects when aircraft changes squawk codes and resets tracking
+- ✅ **Detailed Logging**: Logs tracking progress: "poll 1/3", "poll 2/3", then "🚨 SUSTAINED EMERGENCY SQUAWK"
+
+**How It Works:**
+```
+Poll 1 (00:00): Aircraft squawks 7500
+  → "🔔 New emergency squawk detected - starting sustained tracking (need 3 polls)"
+
+Poll 2 (00:15): Still squawking 7500
+  → "Tracking emergency squawk 7500: poll 2/3"
+
+Poll 3 (00:30): Still squawking 7500
+  → "🚨 SUSTAINED EMERGENCY SQUAWK for 3 polls (45s)"
+  → ALERT SENT! ✉️
+
+(If squawk changes to normal at any point, tracking is cleared - no false alarm)
+```
+
+**Impact:**
+- Eliminates false alarms from accidental transponder settings
+- Real emergencies still alert promptly (45-second delay is acceptable for verification)
+- Better user experience - only actionable alerts
+- Configurable threshold via `emergency_squawk_min_polls` setting
+
+**Technical Changes:**
+- Modified `anomaly_detector.py`: Added `emergency_squawk_tracking` dictionary and `_cleanup_emergency_tracking()` method
+- Completely rewrote `_detect_emergency_squawks()` with sustained detection logic
+- Added configuration thresholds: `emergency_squawk_min_polls` (3) and `emergency_squawk_timeout` (120s)
 
 ### November 1, 2025 - Comprehensive Codebase Refactoring & Consolidation
 **Major Cleanup**: Removed dead code, freed disk space, improved code quality, consolidated architecture

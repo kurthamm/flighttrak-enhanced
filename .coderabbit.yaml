@@ -34,13 +34,16 @@ reviews:
         ### 2. SECURITY & SAFETY
         - No hardcoded API keys, passwords, or secrets in code
         - No `debug=True` in Flask production code
-        - Emergency squawk codes (7500/7700/7777) must always trigger alerts
+        - Emergency squawk codes (7500/7700/7777) must always trigger alerts (after 45s sustained verification)
+        - Sustained squawk tracking must properly maintain state (poll counts, timestamps, alerted flag)
         - Validate all external data (ADS-B JSON, FlightAware API responses)
         - SQL injection prevention (we don't use SQL, but flag if introduced)
 
         ### 3. AVIATION DOMAIN LOGIC
         - Emergency codes: 7500 (hijack), 7600 (radio failure), 7700 (emergency), 7777 (military intercept)
+        - Sustained squawk detection: Emergency squawk must persist for 3 consecutive polls (45s) before alerting
         - 7600 filtering: Only filter during landing approach (altitude, descent rate, airport proximity)
+        - Emergency tracking cleanup: Stale entries must be cleared after 120 seconds timeout
         - Distance calculations: Use haversine formula for lat/lon → miles
         - ICAO hex codes: Must be uppercase (A6F2B7 not a6f2b7)
         - Altitude in feet, speed in knots, distance in miles (aviation standard)

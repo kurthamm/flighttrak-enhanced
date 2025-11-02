@@ -16,7 +16,7 @@ class FlightAnomalyDetector:
     def __init__(self, home_lat, home_lon):
         self.home_lat = home_lat
         self.home_lon = home_lon
-        
+
         # Aircraft tracking data
         self.aircraft_history = defaultdict(lambda: {
             'positions': deque(maxlen=100),
@@ -32,6 +32,10 @@ class FlightAnomalyDetector:
             'behavior_score': 0,
             'anomaly_count': 0
         })
+
+        # Emergency squawk tracking (for sustained detection)
+        # Format: {icao: {'squawk': '7500', 'first_seen': timestamp, 'poll_count': 2, 'alerted': False}}
+        self.emergency_squawk_tracking = {}
         
         # Airport proximity data (major US airports for false positive filtering)
         self.airports = [
@@ -100,6 +104,8 @@ class FlightAnomalyDetector:
             'suspicious_loiter_time': 1800, # 30 minutes loitering
             'min_transponder_gap': 120,     # Minimum gap to flag transponder issue (seconds)
             'altitude_variance_threshold': 5000000,  # Much higher threshold for erratic altitude
+            'emergency_squawk_min_polls': 3,  # Minimum consecutive polls before alerting (3 polls = 45 seconds)
+            'emergency_squawk_timeout': 120,  # Clear tracking after 2 minutes if squawk disappears
             'min_squawk_changes': 5,        # Minimum squawk changes to flag
         }
 
@@ -171,12 +177,19 @@ class FlightAnomalyDetector:
             history['squawks'].add(aircraft['squawk'])
 
     def _detect_emergency_squawks(self, aircraft):
-        """Detect emergency squawk codes with false positive filtering"""
+        """
+        Detect emergency squawk codes with false positive filtering and sustained squawk verification.
+
+        Only alerts if the emergency squawk persists for minimum consecutive polls (default: 2 polls = 30 seconds).
+        This prevents false alarms from accidental/momentary transponder code changes.
+        """
         anomalies = []
 
         # Emergency squawk codes
         squawk = aircraft.get('squawk')
-        if not squawk:
+        icao = aircraft.get('hex', '').upper()
+
+        if not squawk or not icao:
             return anomalies
 
         emergency_codes = {
@@ -186,25 +199,90 @@ class FlightAnomalyDetector:
             '7777': 'MILITARY INTERCEPT - Military interception in progress'
         }
 
+        current_time = time.time()
+
+        # Clean up stale tracking entries (aircraft no longer squawking emergency codes)
+        self._cleanup_emergency_tracking(current_time)
+
         if squawk not in emergency_codes:
+            # If aircraft was being tracked but changed to normal squawk, clear tracking
+            if icao in self.emergency_squawk_tracking:
+                logging.info(f"Aircraft {icao} changed from squawk {self.emergency_squawk_tracking[icao]['squawk']} to {squawk} - clearing emergency tracking")
+                del self.emergency_squawk_tracking[icao]
             return anomalies
 
         # Check if this is likely a false positive (landing approach)
         if self._is_likely_landing_false_positive(aircraft, squawk):
-            logging.debug(f"Filtered false positive {squawk} for {aircraft.get('hex', 'unknown')} - likely landing approach")
+            logging.debug(f"Filtered false positive {squawk} for {icao} - likely landing approach")
             return anomalies
 
-        # Genuine emergency detected
-        anomalies.append({
-            'type': 'EMERGENCY_SQUAWK',
-            'severity': 'CRITICAL',
-            'description': emergency_codes[squawk],
-            'squawk_code': squawk,
-            'aircraft': aircraft,
-            'timestamp': time.time()
-        })
+        # === SUSTAINED SQUAWK TRACKING ===
+
+        # Check if we're already tracking this aircraft's emergency squawk
+        if icao in self.emergency_squawk_tracking:
+            tracked = self.emergency_squawk_tracking[icao]
+
+            # Same squawk code - increment poll count
+            if tracked['squawk'] == squawk:
+                tracked['poll_count'] += 1
+                tracked['last_seen'] = current_time
+
+                # Check if we've reached threshold and haven't alerted yet
+                if tracked['poll_count'] >= self.thresholds['emergency_squawk_min_polls'] and not tracked['alerted']:
+                    # SUSTAINED EMERGENCY - Alert now!
+                    duration = current_time - tracked['first_seen']
+                    logging.warning(f"🚨 SUSTAINED EMERGENCY SQUAWK: {icao} squawk {squawk} for {tracked['poll_count']} polls ({duration:.0f}s)")
+
+                    anomalies.append({
+                        'type': 'EMERGENCY_SQUAWK',
+                        'severity': 'CRITICAL',
+                        'description': emergency_codes[squawk],
+                        'squawk_code': squawk,
+                        'aircraft': aircraft,
+                        'timestamp': current_time,
+                        'sustained_duration': duration,
+                        'poll_count': tracked['poll_count']
+                    })
+
+                    tracked['alerted'] = True  # Mark as alerted to prevent duplicate alerts
+                else:
+                    # Still tracking, not ready to alert yet
+                    logging.info(f"Tracking emergency squawk {squawk} for {icao}: poll {tracked['poll_count']}/{self.thresholds['emergency_squawk_min_polls']}")
+
+            else:
+                # Different squawk code - reset tracking
+                logging.info(f"Aircraft {icao} changed emergency squawk from {tracked['squawk']} to {squawk} - resetting tracking")
+                self.emergency_squawk_tracking[icao] = {
+                    'squawk': squawk,
+                    'first_seen': current_time,
+                    'last_seen': current_time,
+                    'poll_count': 1,
+                    'alerted': False
+                }
+        else:
+            # First time seeing this emergency squawk - start tracking
+            logging.info(f"🔔 New emergency squawk detected: {icao} squawk {squawk} - starting sustained tracking (need {self.thresholds['emergency_squawk_min_polls']} polls)")
+            self.emergency_squawk_tracking[icao] = {
+                'squawk': squawk,
+                'first_seen': current_time,
+                'last_seen': current_time,
+                'poll_count': 1,
+                'alerted': False
+            }
 
         return anomalies
+
+    def _cleanup_emergency_tracking(self, current_time):
+        """Remove stale emergency tracking entries (aircraft that disappeared or changed squawk)"""
+        timeout = self.thresholds['emergency_squawk_timeout']
+        stale_aircraft = [
+            icao for icao, tracked in self.emergency_squawk_tracking.items()
+            if current_time - tracked['last_seen'] > timeout
+        ]
+
+        for icao in stale_aircraft:
+            logging.debug(f"Clearing stale emergency tracking for {icao} (last seen {current_time - self.emergency_squawk_tracking[icao]['last_seen']:.0f}s ago)")
+            del self.emergency_squawk_tracking[icao]
 
     def _is_likely_landing_false_positive(self, aircraft, squawk):
         """
