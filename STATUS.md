@@ -116,10 +116,10 @@ Result: One perfect alert!
 
 ### Alert Settings
 **Recipients** (4 addresses):
-- kurthamm@gmail.com
-- jamie@jamiehamm.com
-- me@kathrynbaird.com
-- stacey@hammfamily.com
+- user1@example.com
+- user2@example.com
+- user3@example.com
+- user4@example.com
 
 **Alert Types**:
 - ✅ Tracked Aircraft: Enabled (smart closest-approach)
@@ -135,7 +135,7 @@ Result: One perfect alert!
 ### Integration Status
 | Integration | Status | Notes |
 |-------------|--------|-------|
-| Gmail SMTP | ✅ Active | kurt@hamm.me, no costs |
+| Gmail SMTP | ✅ Active | No per-email costs |
 | FlightAware API | ✅ Active | Enriches alerts with flight plans |
 | Twitter/X | ✅ Active | Privacy delays configured |
 | ADS-B Source | ✅ Active | planes.hamm.me via Cloudflare |

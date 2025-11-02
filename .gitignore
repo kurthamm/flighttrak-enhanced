@@ -64,3 +64,7 @@ faa_discovery_report_*.txt
 new_aircraft_to_add.json
 /restart_service.sh
 STATUS_*.md
+
+# Test files with sensitive data
+tests/test_email_simple.py
+tests/test_email.py

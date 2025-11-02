@@ -384,10 +384,10 @@ See REFACTORING.md for complete details.
 - Dashboard: 32 aircraft currently visible
 
 **Alert Recipients**: 4 email addresses
-- kurthamm@gmail.com
-- jamie@jamiehamm.com
-- me@kathrynbaird.com
-- stacey@hammfamily.com
+- user1@example.com
+- user2@example.com
+- user3@example.com
+- user4@example.com
 
 **Integration Status**:
 - ✅ Gmail SMTP: Working
